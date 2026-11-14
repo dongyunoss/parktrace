@@ -1,0 +1,21 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
+*.keystore
+*.jks
+
+# Kotlin build cache
+.kotlin/
+
+# Proposal form: has personal-information fields, kept local
+/docs/기획서_여기세웠지.docx
+
+__pycache__/
+*.pyc

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.ParkTrace" parent="Theme.AppCompat.Light.NoActionBar">
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="colorAccent">@color/accent</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+
+    <style name="Label">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">24sp</item>
+    </style>
+
+    <style name="Body">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/fg</item>
+        <item name="android:textSize">28sp</item>
+    </style>
+
+    <style name="Small">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <style name="Caption">
+        <item name="android:layout_width">wrap_content</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">22sp</item>
+    </style>
+
+    <!-- Large touch targets for in-car use (>= 76dp) -->
+    <style name="Action" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">92dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:background">@drawable/button_bg</item>
+        <item name="android:textColor">@color/fg</item>
+        <item name="android:textSize">19sp</item>
+        <item name="android:paddingTop">14dp</item>
+        <item name="android:paddingBottom">8dp</item>
+        <item name="android:drawablePadding">0dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+
+    <!-- Secondary: demo-only controls (stand-ins for the camera), visually quieter -->
+    <style name="ActionSmall" parent="Widget.AppCompat.Button.Borderless">
+        <item name="android:layout_width">0dp</item>
+        <item name="android:layout_height">56dp</item>
+        <item name="android:layout_weight">1</item>
+        <item name="android:layout_marginEnd">10dp</item>
+        <item name="android:background">@drawable/button_outline_bg</item>
+        <item name="android:textColor">@color/muted</item>
+        <item name="android:textSize">19sp</item>
+        <item name="android:stateListAnimator">@null</item>
+    </style>
+</resources>

@@ -1,0 +1,673 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ParkTrace 시연기 · 카메라 없이 기능 시연</title>
+<style>
+  :root { color-scheme: dark; --bg:#080b10; --card:#121821; --line:#1d2530; --fg:#e8edf3; --muted:#8a97a8; --real:#37d6c0; --mock:#ffb84d; --blue:#7fb2ff; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--fg); font-family:"Pretendard","Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif; }
+  header { display:flex; flex-wrap:wrap; align-items:center; gap:12px; padding:18px 24px 6px; }
+  header h1 { font-size:22px; margin:0; }
+  header p { margin:0; color:var(--muted); font-size:14px; flex-basis:100%; }
+  .chip { font-size:12.5px; font-weight:700; border-radius:999px; padding:4px 10px; }
+  .chip.r { background:#0f3a35; color:var(--real); } .chip.m { background:#3d2c0d; color:var(--mock); }
+  main { display:grid; grid-template-columns:330px minmax(0,1fr) 340px; gap:16px; padding:12px 24px 28px; align-items:start; }
+  @media (max-width:1100px) { main { grid-template-columns:1fr; } }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:18px; padding:16px 18px; }
+  .card h2 { font-size:13.5px; color:var(--muted); font-weight:600; margin:0 0 10px; }
+  .grp { border-top:1px solid var(--line); padding-top:12px; margin-top:12px; }
+  .grp h3 { font-size:13px; margin:0 0 8px; color:#c0c9d5; font-weight:600; }
+  .grp h3 span { color:var(--muted); font-weight:400; }
+  button { font:inherit; color:var(--fg); background:#1b2430; border:1px solid #2a3442; border-radius:12px; padding:10px 12px; cursor:pointer; font-size:14.5px; font-weight:600; white-space:nowrap; }
+  button:hover { background:#232e3c; } button:disabled { opacity:.45; cursor:default; }
+  button.pri { background:var(--real); color:#06231f; border-color:var(--real); }
+  button.mock { border-color:#6b4d14; color:var(--mock); }
+  button.on { outline:2px solid var(--real); }
+  .row { display:flex; flex-wrap:wrap; gap:8px; }
+  .row.fill > button { flex:1; }
+  label.ck { display:flex; align-items:center; gap:8px; font-size:14px; color:#c0c9d5; margin-top:8px; }
+  .screen { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:14px; }
+  @media (max-width:760px) { .screen { grid-template-columns:1fr; } }
+  .phase { display:inline-block; font-size:14px; font-weight:700; border-radius:999px; padding:5px 12px; background:#1b2430; color:#c0c9d5; }
+  .phase.g { background:#0f3a35; color:var(--real); } .phase.p { background:var(--real); color:#06231f; }
+  .head { font-size:72px; font-weight:800; line-height:1.05; margin-top:12px; letter-spacing:-1px; min-height:76px; }
+  .head .fl { color:var(--real); } .head .sp { color:var(--mock); }
+  .sub { font-size:17px; margin-top:8px; }
+  .sm { font-size:14px; color:var(--muted); margin-top:8px; line-height:1.5; }
+  .msg { font-size:14.5px; color:var(--real); margin-top:8px; min-height:20px; }
+  .say { margin-top:12px; background:#0c1118; border-radius:12px; padding:10px 12px; font-size:15.5px; font-weight:600; display:none; }
+  .say small { display:block; color:var(--muted); font-weight:400; font-size:12.5px; margin-top:3px; }
+  svg.trace { width:100%; height:300px; display:block; background:#0c1118; border-radius:14px; }
+  ol.dir { margin:10px 0 0; padding-left:20px; font-size:15.5px; line-height:1.6; }
+  .phone { background:#05070a; border-radius:36px; padding:11px; }
+  .phone .in { background:#0e1116; border-radius:27px; padding:18px 15px; min-height:300px; font-size:14px; }
+  .phone .in .muted { color:#a6b0bf; }
+  .phone .in .pc { background:#1a1f27; border-radius:16px; padding:14px 16px; margin-top:10px; }
+  .phone .in .big { font-size:50px; font-weight:800; line-height:1.05; }
+  .phone .in .spot { font-size:26px; font-weight:800; color:var(--blue); margin-top:8px; }
+  .phone .in svg { width:100%; height:170px; display:block; }
+  .phone .in .btn { display:block; text-align:center; background:#2f80ff; color:#fff; padding:11px; border-radius:12px; margin-top:10px; font-weight:700; text-decoration:none; }
+  .log { list-style:none; margin:0; padding:0; max-height:300px; overflow:auto; }
+  .log li { padding:7px 0; border-bottom:1px solid var(--line); font-size:13.5px; line-height:1.45; }
+  .log li b { display:block; font-size:14.5px; }
+  .log li .t { color:var(--muted); font-size:12px; }
+  .legend { display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:var(--muted); padding:0 24px 24px; }
+  .dot { display:inline-block; width:10px; height:10px; border-radius:50%; margin-right:6px; }
+  code { font-size:12px; color:var(--muted); word-break:break-all; }
+</style>
+</head>
+<body>
+<header>
+  <h1>ParkTrace 시연기</h1>
+  <span class="chip m">카메라 인식: 미구현 (모의 입력)</span>
+  <span class="chip r">나머지 기능: 실제 로직 그대로</span>
+  <p>차량 앱의 판단 로직(진입 감지, 경로 추적, 층 추정, 표지판 투표, 주차 확정)을 브라우저에서 그대로 돌립니다. 왼쪽 조작판이 Pleos Connect Virtual Console과 카메라 역할을 대신합니다.</p>
+</header>
+<main>
+  <!-- 1. controls -->
+  <section class="card">
+    <h2>조작판 (차량 신호를 흉내냅니다)</h2>
+    <div class="row fill">
+      <button class="pri" id="btnPlay">▶ 자동 재생</button>
+      <button id="btnReset">↺ 초기화</button>
+    </div>
+    <label class="ck"><input type="checkbox" id="ckVoice" checked> 음성 안내 소리 켜기</label>
+
+    <div class="grp">
+      <h3>위치 <span>· FusedLocation</span></h3>
+      <div class="row fill">
+        <button id="btnGpsGood" class="on">GPS 좋음</button>
+        <button id="btnGpsBad">GPS 약함</button>
+      </div>
+      <label class="ck"><input type="checkbox" id="ckRamp"> 내리막 (이동할 때 고도 0.5 m 하강)</label>
+    </div>
+
+    <div class="grp">
+      <h3>주행 <span>· Vehicle (핸들 30°, 주행거리)</span></h3>
+      <div class="row fill">
+        <button id="btnLeft">◀ 좌</button>
+        <button id="btnStraight" class="on">직진</button>
+        <button id="btnRight">우 ▶</button>
+      </div>
+      <div class="row fill" style="margin-top:8px">
+        <button id="btnMove">5 m 이동</button>
+        <button id="btnEntry">진입 (수동)</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>모의 표지판 인식 <span>· 카메라 자리 (향후 계획)</span></h3>
+      <div class="row" id="signs">
+        <button class="mock" data-sign="B1">B1</button>
+        <button class="mock" data-sign="B2">B2</button>
+        <button class="mock" data-sign="C-12">C-12</button>
+        <button class="mock" data-sign="C-14">C-14</button>
+        <button class="mock" data-sign="C-15">C-15</button>
+        <button class="mock" data-sign="B2|CI5">CI5 (오독)</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <h3>하차 <span>· Vehicle (운전석 문)</span></h3>
+      <div class="row fill"><button id="btnDoor">운전석 문 열기</button></div>
+      <div class="sm">멈춘 뒤 8초가 지나면 "정차"로 판단하고, 문이 열리면 주차를 확정합니다.</div>
+    </div>
+  </section>
+
+  <!-- 2. car screen -->
+  <section class="card">
+    <h2>차량 화면 (앱)</h2>
+    <div class="screen">
+      <div>
+        <span class="phase" id="phase">주행 중</span>
+        <div class="head" id="head">—</div>
+        <div class="sub" id="sub">주차하면 층과 구역 번호를 자동으로 기억해요</div>
+        <div class="sm" id="evidence"></div>
+        <div class="sm" id="camera">표지판 인식: 꺼짐 (카메라 미구현)</div>
+        <div class="msg" id="msg"></div>
+        <div class="say" id="say"></div>
+      </div>
+      <div>
+        <div class="sm" style="margin-top:0">입구 → 내 차 경로 (핸들 각도 + 주행거리)</div>
+        <svg class="trace" id="trace" viewBox="0 0 400 300"></svg>
+        <ol class="dir" id="dir"></ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3. phone + log -->
+  <section style="display:flex;flex-direction:column;gap:16px">
+    <div class="card">
+      <h2>폰 화면 미리보기 (QR을 찍으면 열리는 페이지)</h2>
+      <div class="phone"><div class="in" id="phone"><p class="muted">주차가 확정되면 여기에 표시됩니다.</p></div></div>
+      <div class="sm" id="link"></div>
+    </div>
+    <div class="card">
+      <h2>차가 알아서 한 일</h2>
+      <ul class="log" id="log"></ul>
+    </div>
+  </section>
+</main>
+<div class="legend">
+  <span><i class="dot" style="background:var(--real)"></i>공개 SDK 신호로 동작하는 부분 (Vehicle, FusedLocation, NaviHelper, TextToSpeech)</span>
+  <span><i class="dot" style="background:var(--mock)"></i>카메라 인식: 아직 구현하지 않음. 버튼이나 시나리오가 "카메라가 읽은 글자"를 대신 넣습니다</span>
+</div>
+
+<script>
+'use strict';
+/* =====================================================================
+ * Core logic: line-by-line port of app/src/main/java/com/parktrace/core
+ * ===================================================================== */
+const rad = d => d * Math.PI / 180, deg = r => r * 180 / Math.PI;
+const floorLabel = l => l < 0 ? 'B' + (-l) : l === 0 ? '1F' : l + 'F';
+
+class DeadReckoner {
+  constructor(wheelbase = 2.9, spacing = 2.0) { this.wb = wheelbase; this.spacing = spacing; this.reset(); }
+  reset() { this.steer = 0; this.h = 0; this.x = 0; this.y = 0; this.travelled = 0; this.since = 0; this.totalTurn = 0; this.points = [{ x: 0, y: 0, headingDeg: 0, distance: 0 }]; }
+  get netTurnDegrees() { return deg(this.h); }
+  onSteering(d) { this.steer = Math.max(-45, Math.min(45, d)); }
+  advance(ds) {
+    if (ds <= 0) return;
+    let remaining = ds;
+    while (remaining > 0) {
+      const step = Math.min(0.5, remaining);
+      const dPsi = step * Math.tan(rad(this.steer)) / this.wb;
+      const mid = this.h + dPsi / 2;
+      this.x += step * Math.sin(mid); this.y += step * Math.cos(mid);
+      this.h += dPsi; this.totalTurn += Math.abs(deg(dPsi));
+      this.travelled += step; this.since += step; remaining -= step;
+      if (this.since >= this.spacing) { this.points.push({ x: this.x, y: this.y, headingDeg: deg(this.h), distance: this.travelled }); this.since = 0; }
+    }
+  }
+  closePath() { const l = this.points[this.points.length - 1]; if (l.x !== this.x || l.y !== this.y) this.points.push({ x: this.x, y: this.y, headingDeg: deg(this.h), distance: this.travelled }); }
+}
+
+function estimateFloor(altDelta, netTurn, floorH = 3.2, degPer = 360, assumeUnder = true) {
+  const has = altDelta != null && !Number.isNaN(altDelta);
+  let altLevels = null;
+  if (has && Math.abs(altDelta) >= 1.5) { const v = Math.round(altDelta / floorH); if (v !== 0) altLevels = v; }
+  const loops = Math.trunc((Math.abs(netTurn) + degPer * 0.25) / degPer);
+  const goingDown = has && Math.abs(altDelta) >= 1.0 ? altDelta < 0 : assumeUnder;
+  const turnLevels = loops > 0 ? (goingDown ? -loops : loops) : null;
+  const aware = v => v > 0 ? v + 1 : v;
+  const mk = (level, confidence, method) => ({ level, confidence, method, label: floorLabel(level) });
+  if (altLevels != null && turnLevels != null && altLevels === turnLevels) return mk(aware(altLevels), 'HIGH', '고도 변화와 램프 회전수가 일치');
+  if (altLevels != null && turnLevels != null && Math.abs(altLevels - turnLevels) === 1) return mk(aware(altLevels), 'MEDIUM', '고도 변화 기준 (회전수와 1개 층 차이)');
+  if (altLevels != null && turnLevels != null) return mk(aware(altLevels), 'LOW', '고도 변화와 회전수가 크게 다름');
+  if (altLevels != null) return mk(aware(altLevels), 'MEDIUM', '고도 변화 기준');
+  if (turnLevels != null) return mk(aware(turnLevels), 'LOW', '램프 회전수 기준');
+  return mk(goingDown ? -1 : 0, 'LOW', '단서 부족, 기본값');
+}
+
+const SignTextParser = (() => {
+  const ZONES = '가나다라마바사아자차카타파하';
+  const FLOOR = [
+    [/지하\s*(\d{1,2})\s*층?/, m => -parseInt(m[1], 10)],
+    [/(?<![A-Z0-9])B\s*-?\s*(\d)\s*(?:층|F)/, m => -parseInt(m[1], 10)],
+    [/(?<![A-Z0-9])B(\d)(?![0-9])/, m => -parseInt(m[1], 10)],
+    [/(?<![0-9A-Z])(\d{1,2})\s*(?:층|F)(?![A-Z])/, m => parseInt(m[1], 10)],
+  ];
+  const SPOT = new RegExp('(?<![A-Z0-9가-힣])([A-Z]|[' + ZONES + '])\\s*-?\\s*(\\d{1,3})(?![0-9])');
+  function normalize(line) {
+    let s = line.toUpperCase().replace(/[–—_]/g, '-').replace(/[|:;.,]/g, ' ');
+    s = s.replace(/(?<=[A-Z0-9])([OILS])(?=[0-9])|(?<=[0-9])([OILS])(?=[0-9]|\b)/g, m => m === 'O' ? '0' : (m === 'I' || m === 'L') ? '1' : m === 'S' ? '5' : m);
+    return ' ' + s.replace(/\s+/g, ' ').trim() + ' ';
+  }
+  function parseLine(line) {
+    let s = normalize(line), floor = null;
+    for (const [re, toLevel] of FLOOR) {
+      const m = re.exec(s); if (!m) continue;
+      const lvl = toLevel(m); if (lvl === 0 || lvl > 30 || lvl < -9) continue;
+      floor = lvl; s = ' ' + s.slice(0, m.index) + s.slice(m.index + m[0].length) + ' '; break;
+    }
+    const sm = SPOT.exec(s);
+    const spot = sm ? sm[1] + '-' + (sm[2].replace(/^0+/, '') || '0') : null;
+    if (floor == null && spot == null) return null;
+    return { floorLevel: floor, spot, raw: line };
+  }
+  const parse = text => text.split('\n').map(l => l.trim()).filter(Boolean).map(parseLine).filter(Boolean);
+  return { parse, parseLine, normalize };
+})();
+
+class SpotVoter {
+  constructor(spotWindow = 25, floorHalfLife = 60) { this.win = spotWindow; this.half = floorHalfLife; this.s = []; }
+  add(trip, t, obs) { obs.forEach(o => this.s.push({ trip, t, obs: o })); if (this.s.length > 600) this.s.splice(0, this.s.length - 600); }
+  clear() { this.s.length = 0; }
+  decide(finalTrip) {
+    const fS = new Map(), fC = new Map(), sS = new Map(), sC = new Map();
+    for (const g of this.s) {
+      const back = Math.max(0, finalTrip - g.trip);
+      if (g.obs.floorLevel != null) { const w = Math.exp(-back * Math.log(2) / this.half); fS.set(g.obs.floorLevel, (fS.get(g.obs.floorLevel) || 0) + w); fC.set(g.obs.floorLevel, (fC.get(g.obs.floorLevel) || 0) + 1); }
+      if (g.obs.spot != null && back <= this.win) { const w = 1 - back / (this.win * 1.25); sS.set(g.obs.spot, (sS.get(g.obs.spot) || 0) + w); sC.set(g.obs.spot, (sC.get(g.obs.spot) || 0) + 1); }
+    }
+    const best = m => { let k = null, v = -Infinity; for (const [kk, vv] of m) if (vv > v) { k = kk; v = vv; } return k == null ? null : [k, v]; };
+    const bf = best(fS), bs = best(sS);
+    let total = 0; for (const v of sS.values()) total += v;
+    return {
+      floorLevel: bf ? bf[0] : null, floorVotes: bf ? fC.get(bf[0]) : 0, floorLabel: bf ? floorLabel(bf[0]) : null,
+      spot: bs ? bs[0] : null, spotVotes: bs ? sC.get(bs[0]) : 0, spotShare: total > 0 && bs ? bs[1] / total : 0,
+    };
+  }
+}
+
+const Directions = (() => {
+  const TURN_RATE = 6.0;
+  function from(points, floorLevel) {
+    if (points.length < 2) return ['입구 바로 근처', '주차'];
+    const runs = [];
+    for (let i = 1; i < points.length; i++) {
+      const ds = points[i].distance - points[i - 1].distance; if (ds <= 0) continue;
+      const dh = points[i].headingDeg - points[i - 1].headingDeg;
+      const kind = Math.abs(dh / ds) <= TURN_RATE ? 'S' : dh > 0 ? 'R' : 'L';
+      const last = runs[runs.length - 1];
+      if (last && last.kind === kind) { last.length += ds; last.turn += dh; } else runs.push({ kind, length: ds, turn: dh });
+    }
+    const merged = [];
+    for (const r of runs) {
+      const kind = r.kind !== 'S' && Math.abs(r.turn) < 45 ? 'S' : r.kind;
+      const last = merged[merged.length - 1];
+      if (last && last.kind === kind) { last.length += r.length; last.turn += r.turn; } else merged.push({ kind, length: r.length, turn: r.turn });
+    }
+    const steps = []; let pending = null, first = true;
+    for (const r of merged) {
+      if (r.kind === 'S') {
+        const len = Math.round(r.length);
+        if (len >= 3) steps.push(first ? `입구에서 직진 ${len}m` : pending != null ? `${pending} 후 ${len}m` : `직진 ${len}m`);
+        else if (pending != null) steps.push(pending);
+        pending = null;
+      } else if (Math.abs(r.turn) >= 300) {
+        if (pending != null) steps.push(pending); pending = null;
+        const loops = Math.max(1, Math.round(Math.abs(r.turn) / 360));
+        const dir = floorLevel != null ? (floorLevel < 0 ? ' (내려감)' : ' (올라감)') : '';
+        steps.push(`나선 램프 ${loops}바퀴${dir}`);
+      } else {
+        if (pending != null) steps.push(pending);
+        pending = r.turn > 0 ? '우회전' : '좌회전';
+      }
+      first = false;
+    }
+    if (pending != null) steps.push(pending);
+    steps.push('주차');
+    return steps;
+  }
+  return { from };
+})();
+
+const CUE = { GEOFENCE: '등록된 주차장 진입', GPS_STALL: 'GPS 위치 정체', ALTITUDE_DROP: '고도 급강하', LOW_CONFIDENCE: '위치 신뢰도 하락', MANUAL: '수동 입력' };
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const r = 6371000, dLat = rad(lat2 - lat1), dLon = rad(lon2 - lon1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(rad(lat1)) * Math.cos(rad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * r * Math.asin(Math.sqrt(a));
+}
+
+class ParkingDetector {
+  constructor(listener) {
+    this.c = { stallMeters: 40, altitudeDropMeters: 2.5, lowConfidence: 0.3, lowConfidenceCount: 3, goodConfidence: 0.6, stopSecondsWithGear: 3, stopSecondsWithoutGear: 8, restartMeters: 4, exitGarageMeters: 60 };
+    this.l = listener; this.phase = 'DRIVING'; this.reckoner = new DeadReckoner();
+    this.lastTrip = null; this.lastMoveAt = 0; this.gearPark = null;
+    this.lastFix = null; this.lastGoodFix = null; this.lowRun = 0; this.altWindow = []; this.stallTrip = null; this.stallFix = null;
+    this.entryCue = null; this.garageName = null; this.entrance = null; this.parkedTrip = 0; this.sinceGood = 0;
+  }
+  onSignal(s) {
+    switch (s.k) {
+      case 'Location': return this.onLocation(s);
+      case 'TripDistance': return this.onTrip(s);
+      case 'Steering': return this.reckoner.onSteering(s.degrees);
+      case 'Brake': return;
+      case 'DriverDoor': if (s.open) this.driverLeaving(s.t); return;
+      case 'DoorLock': if (s.locked) this.driverLeaving(s.t); return;
+      case 'DriverSeat': if (!s.occupied) this.driverLeaving(s.t); return;
+      case 'GarageGeofence': return this.enterGarage('GEOFENCE', s.t, s.garageName);
+      case 'ManualGarageEntry': return this.enterGarage('MANUAL', s.t, null);
+      case 'Tick': return this.checkStop(s.t);
+    }
+  }
+  onLocation(s) {
+    this.lastFix = s;
+    const good = s.confidence >= this.c.goodConfidence;
+    if (good) this.lastGoodFix = s;
+    this.lowRun = s.confidence < this.c.lowConfidence ? this.lowRun + 1 : 0;
+    if (this.lastTrip != null) {
+      this.altWindow.push([this.lastTrip, s.altitude]);
+      while (this.altWindow.length > 2 && this.lastTrip - this.altWindow[0][0] > 200) this.altWindow.shift();
+    }
+    if (this.phase === 'DRIVING') {
+      if (this.lowRun >= this.c.lowConfidenceCount) this.enterGarage('LOW_CONFIDENCE', s.t, null);
+      else if (this.altitudeDropped()) this.enterGarage('ALTITUDE_DROP', s.t, null);
+    } else if (this.phase === 'IN_GARAGE' && good) {
+      if (this.sinceGood > this.c.exitGarageMeters && this.entryCue !== 'MANUAL') this.leaveGarage();
+      this.sinceGood = 0;
+    }
+  }
+  altitudeDropped() {
+    if (this.altWindow.length < 2) return false;
+    const maxAlt = Math.max(...this.altWindow.map(a => a[1]));
+    return maxAlt - this.altWindow[this.altWindow.length - 1][1] >= this.c.altitudeDropMeters;
+  }
+  onTrip(s) {
+    const meters = s.meters, prev = this.lastTrip;
+    this.lastTrip = meters;
+    if (prev == null) { this.lastMoveAt = s.t; return; }
+    const ds = meters - prev;
+    if (ds < 0) return;
+    if (ds > 0.3) this.lastMoveAt = s.t;
+    if (this.phase === 'DRIVING') this.detectStall(meters);
+    else if (this.phase === 'IN_GARAGE') { this.reckoner.advance(ds); this.sinceGood += ds; this.l.onTrace(this.reckoner.points, this.currentEstimate()); }
+    else if (this.phase === 'STOPPED') { this.reckoner.advance(ds); if (meters - this.parkedTrip > this.c.restartMeters) { this.setPhase('IN_GARAGE'); this.l.onRestarted(); } }
+    else if (this.phase === 'PARKED') { if (meters - this.parkedTrip > this.c.restartMeters * 5) this.resetToDriving(); }
+  }
+  detectStall(trip) {
+    const fix = this.lastFix; if (!fix) return;
+    if (this.stallTrip == null || this.stallFix == null) { this.stallTrip = trip; this.stallFix = fix; return; }
+    const odo = trip - this.stallTrip; if (odo < this.c.stallMeters) return;
+    const gps = haversine(this.stallFix.lat, this.stallFix.lon, fix.lat, fix.lon);
+    if (gps < odo * 0.35) this.enterGarage('GPS_STALL', fix.t, null); else { this.stallTrip = trip; this.stallFix = fix; }
+  }
+  enterGarage(cue, t, name) {
+    if (this.phase !== 'DRIVING') { if (name != null) this.garageName = name; return; }
+    this.reckoner.reset(); this.entryCue = cue; this.garageName = name; this.sinceGood = 0;
+    const ref = this.lastGoodFix || this.lastFix;
+    this.entrance = ref ? { lat: ref.lat, lon: ref.lon, altitude: Number.isNaN(ref.altitude) ? null : ref.altitude, heading: ref.heading, t: ref.t } : null;
+    this.setPhase('IN_GARAGE'); this.lastMoveAt = t;
+    this.l.onGarageEntered(cue, this.entrance, name);
+  }
+  checkStop(now) {
+    if (this.phase !== 'IN_GARAGE') return;
+    const need = this.gearPark != null ? this.c.stopSecondsWithGear : this.c.stopSecondsWithoutGear;
+    const stoppedFor = Math.trunc((now - this.lastMoveAt) / 1000);
+    if (stoppedFor >= need && this.gearPark !== false) {
+      this.reckoner.closePath(); this.parkedTrip = this.lastTrip || 0;
+      this.setPhase('STOPPED'); this.l.onStopped(this.currentEstimate());
+    }
+  }
+  driverLeaving(t) {
+    if (this.phase === 'STOPPED') this.finish(t, true);
+    else if (this.phase === 'IN_GARAGE') { if (t - this.lastMoveAt >= 1500) { this.reckoner.closePath(); this.finish(t, true); } }
+    else if (this.phase === 'DRIVING') { if (t - this.lastMoveAt >= 1500 && this.lastFix) this.finish(t, false); }
+  }
+  finish(t, inGarage) {
+    this.parkedTrip = this.lastTrip || 0;
+    const f = this.lastGoodFix || this.lastFix;
+    const fix = f ? { lat: f.lat, lon: f.lon, altitude: f.altitude, heading: f.heading, t: f.t } : null;
+    const session = {
+      inGarage, entryCue: inGarage ? this.entryCue : null, garageName: this.garageName,
+      entrance: inGarage ? this.entrance : fix, estimate: inGarage ? this.currentEstimate() : null,
+      path: inGarage ? this.reckoner.points.slice() : [], travelledInGarage: inGarage ? this.reckoner.travelled : 0,
+      parkedAt: t, lastFix: fix,
+    };
+    this.setPhase('PARKED'); this.l.onParked(session);
+  }
+  leaveGarage() { this.resetToDriving(); this.l.onLeftGarage(); }
+  resetToDriving() {
+    this.entryCue = null; this.garageName = null; this.entrance = null; this.stallTrip = null; this.stallFix = null;
+    this.lowRun = 0; this.altWindow = []; this.reckoner.reset(); this.setPhase('DRIVING');
+  }
+  currentEstimate() {
+    const ea = this.entrance ? this.entrance.altitude : null, ca = this.lastFix ? this.lastFix.altitude : null;
+    const delta = ea != null && ca != null && !Number.isNaN(ca) ? ca - ea : null;
+    return estimateFloor(delta, this.reckoner.netTurnDegrees);
+  }
+  setPhase(p) { if (this.phase === p) return; this.phase = p; this.l.onPhaseChanged(p); }
+}
+
+/* =====================================================================
+ * "Service": same wiring as ParkingMonitorService, with a simulated sign reader
+ * ===================================================================== */
+const PLACE = '가온타워 지하주차장 (예시)';
+const App = {
+  ui: null, detector: null, voter: new SpotVoter(), lastTrip: 0, readerOn: false, scenario: false, lastEstLabel: null,
+  reset() {
+    this.voter.clear(); this.lastTrip = 0; this.readerOn = false; this.lastEstLabel = null;
+    this.ui = { phase: 'DRIVING', entryCue: null, placeName: null, estimate: null, path: [], liveDecision: null, lastSignText: null, cameraStatus: '꺼짐 (카메라 미구현)', latest: null, message: null, spoken: null };
+    this.detector = new ParkingDetector(this.listener());
+    document.getElementById('log').innerHTML = '';
+    render();
+  },
+  inject(s) { if (s.k === 'TripDistance') this.lastTrip = s.meters; this.detector.onSignal(s); render(); },
+  /** Stand-in for the camera: text as an OCR engine would deliver it ("|" separates lines). */
+  simulateSign(text, t) {
+    if (!this.readerOn) { this.ui.message = "표지판은 주차장 안에서만 읽어요. 먼저 주차장에 들어가세요"; render(); return; }
+    this.onSignText(text.split('|').map(s => s.trim()).filter(Boolean), t);
+  },
+  onSignText(lines, t) {
+    const obs = SignTextParser.parse(lines.join('\n'));
+    if (!obs.length) return;
+    if (this.detector.phase !== 'IN_GARAGE' && this.detector.phase !== 'STOPPED') return;
+    this.voter.add(this.lastTrip, t, obs);
+    const readable = obs.map(o => [o.floorLevel != null ? floorLabel(o.floorLevel) : null, o.spot].filter(Boolean).join(' ')).join('  ');
+    this.ui.lastSignText = readable; this.ui.liveDecision = this.voter.decide(this.lastTrip);
+    log('표지판 읽음: ' + readable, `입력 글자 "${lines.join(' / ')}" · 카메라 자리 (모의)`, t, true);
+    render();
+  },
+  listener() {
+    const self = this;
+    return {
+      onPhaseChanged(p) { self.ui.phase = p; },
+      onGarageEntered(cue, entrance, name) {
+        self.voter.clear(); self.readerOn = true;
+        Object.assign(self.ui, { entryCue: cue, placeName: name || PLACE, path: [], liveDecision: null, lastSignText: null, cameraStatus: '모의 인식 대기 중 (카메라 미구현)', message: null });
+        log('지하주차장 진입 감지', '근거: ' + CUE[cue] + ' · FusedLocation', self.clock());
+        log('건물 이름 확인: ' + self.ui.placeName, '내비 목적지 정보 · NaviHelper (시연기에서는 예시 값)', self.clock());
+      },
+      onTrace(points, est) {
+        self.ui.path = points.slice(); self.ui.estimate = est;
+        if (est.label !== self.lastEstLabel && Math.abs(self.detector.reckoner.netTurnDegrees) > 180) {
+          self.lastEstLabel = est.label;
+          log('층 추정: ' + est.label, est.method + ' · Vehicle 핸들 각도 + FusedLocation 고도', self.clock());
+        }
+      },
+      onStopped(est) { self.ui.estimate = est; self.ui.message = '정차 감지: 마지막으로 본 구역 표지를 확인하는 중'; log('정차 감지', '주행거리가 8초 동안 그대로 · Vehicle', self.clock()); },
+      onRestarted() { self.ui.message = null; },
+      onLeftGarage() { self.readerOn = false; self.voter.clear(); Object.assign(self.ui, { entryCue: null, path: [], liveDecision: null, message: '주차장을 벗어남', cameraStatus: '꺼짐 (카메라 미구현)' }); },
+      onParked(session) {
+        self.readerOn = false; self.ui.cameraStatus = '꺼짐 (카메라 미구현)';
+        const rec = self.buildRecord(session);
+        self.ui.latest = rec; self.ui.message = '저장 완료: ' + headline(rec); self.ui.spoken = spoken(rec);
+        log('주차 완료: ' + headline(rec), '운전석 문 열림 · Vehicle', session.parkedAt);
+        log('음성 안내', '“' + self.ui.spoken + '” · TextToSpeech', session.parkedAt);
+        speak(self.ui.spoken);
+      },
+    };
+  },
+  clock() { return Sim.now(); },
+  buildRecord(session) {
+    const d = session.inGarage ? this.voter.decide(this.lastTrip) : null, est = session.estimate;
+    const ocrFloor = d ? d.floorLabel : null, floor = ocrFloor || (est ? est.label : null);
+    return {
+      savedAt: session.parkedAt, inGarage: session.inGarage, placeName: session.garageName || this.ui.placeName || PLACE,
+      entranceLat: session.entrance ? session.entrance.lat : null, entranceLon: session.entrance ? session.entrance.lon : null,
+      floorLabel: session.inGarage ? floor : null,
+      floorSource: !session.inGarage ? null : ocrFloor ? '표지판 인식' : '고도·회전 추정',
+      estimatedFloor: est ? est.label : null, estimateConfidence: est ? est.confidence : null,
+      floorCrossCheckOk: ocrFloor && est ? ocrFloor === est.label : null,
+      spot: d ? d.spot : null, spotVotes: d ? d.spotVotes : 0, entryCue: session.entryCue ? CUE[session.entryCue] : null,
+      points: session.path, path: session.path.map(p => [p.x, p.y]), travelledMeters: session.travelledInGarage,
+      floorLevel: est ? est.level : null,
+    };
+  },
+};
+const headline = r => !r.inGarage ? '지상 주차' : r.floorLabel && r.spot ? `${r.floorLabel} · ${r.spot}` : r.floorLabel || '주차장';
+const spokenFloor = l => l === 'RF' ? '옥상' : l[0] === 'B' ? `지하 ${l.slice(1)}층` : l.endsWith('F') ? `${l.slice(0, -1)}층` : l;
+function spoken(r) {
+  if (!r.inGarage) return '주차 위치를 저장했어요.';
+  const f = r.floorLabel ? spokenFloor(r.floorLabel) : null;
+  return f && r.spot ? `${f} ${r.spot.replace('-', ' ')} 구역에 주차했어요.` : f ? `${f} 에 주차했어요. 구역 번호는 읽지 못했어요.` : '주차 위치를 저장했어요.';
+}
+
+/* =====================================================================
+ * Simulated vehicle (replaces the Virtual Console) + scripted scenario
+ * ===================================================================== */
+const Sim = {
+  synthetic: null, trip: 0, lat: 37.5450, lon: 127.2240, alt: 32.0, steer: 0, gpsGood: true, ramp: false, timer: null,
+  now() { return this.synthetic != null ? this.synthetic : Date.now(); },
+  reset() {
+    clearTimeout(this.timer); this.timer = null; this.synthetic = null; App.scenario = false;
+    this.trip = 0; this.lat = 37.5450; this.lon = 127.2240; this.alt = 32.0; this.steer = 0; this.gpsGood = true; this.ramp = false;
+    document.getElementById('ckRamp').checked = false; syncButtons(); App.reset();
+  },
+  move(meters, steer, conf, altStep) {
+    const t = this.now();
+    App.inject({ k: 'Steering', t, degrees: steer });
+    this.trip += meters; App.inject({ k: 'TripDistance', t, meters: this.trip });
+    if (conf >= 0.6) this.lat += meters / 111000;
+    this.alt += altStep;
+    App.inject({ k: 'Location', t, lat: this.lat, lon: this.lon, altitude: this.alt, heading: 0, confidence: conf });
+  },
+  /** Same script as DemoScenario.kt: 1 step = 1 s of vehicle time. */
+  buildScenario() {
+    const steps = [], tick = () => { this.synthetic += 1000; return this.synthetic; };
+    const drive = (m, steer, conf, altStep = 0, sign = null) => steps.push(() => { tick(); this.move(m, steer, conf, altStep); if (sign) App.simulateSign(sign, this.synthetic); });
+    const idle = (n, fn) => { for (let i = 0; i < n; i++) steps.push(() => { const t = tick(); if (fn) fn(t); App.inject({ k: 'Tick', t }); }); };
+    for (let i = 0; i < 4; i++) drive(5, 0, 0.95);
+    for (let i = 0; i < 3; i++) drive(5, 0, 0.1, -0.3, i === 2 ? '주차장 입구|높이제한 2.3M' : null);
+    for (let i = 0; i < 13; i++) drive(4.85, 30, 0.15, -0.5, { 3: 'B1', 5: 'B1|출구 →', 10: 'B2', 12: 'B2|C-1' }[i] || null);
+    for (let i = 0; i < 6; i++) drive(5, 0, 0.15, 0, { 1: 'B2|C-12', 3: 'B2-C13', 5: 'C14' }[i] || null);
+    drive(4, 35, 0.15, 0, 'C-15'); drive(4, 35, 0.15, 0, 'B2|CI5'); drive(3, 0, 0.15, 0, 'C15');
+    idle(1, t => App.inject({ k: 'Brake', t, pressed: true }));
+    idle(9);
+    idle(1, t => App.inject({ k: 'DriverDoor', t, open: true }));
+    idle(1);
+    return steps;
+  },
+  play(stepMs = 450) {
+    this.reset(); App.scenario = true; this.synthetic = Date.now();
+    const steps = this.buildScenario(); let i = 0;
+    const next = () => { if (i >= steps.length) { App.scenario = false; this.synthetic = null; syncButtons(); return; } steps[i++](); this.timer = setTimeout(next, stepMs); };
+    syncButtons(); next();
+  },
+  /** For automated checks: run the whole script synchronously and return the saved record. */
+  runFast() {
+    this.reset(); App.scenario = true; this.synthetic = Date.now();
+    this.buildScenario().forEach(s => s());
+    App.scenario = false; this.synthetic = null; syncButtons();
+    return App.ui.latest;
+  },
+};
+
+/* =====================================================================
+ * UI
+ * ===================================================================== */
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function speak(text) {
+  if (!$('ckVoice').checked || !('speechSynthesis' in window)) return;
+  try { const u = new SpeechSynthesisUtterance(text); u.lang = 'ko-KR'; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { /* no voice available */ }
+}
+function log(title, detail, t, mock) {
+  const li = document.createElement('li');
+  const time = new Date(t).toLocaleTimeString('ko-KR', { hour12: false });
+  li.innerHTML = `<span class="t">${time}</span><b style="color:${mock ? 'var(--mock)' : 'var(--real)'}">${esc(title)}</b>${esc(detail)}`;
+  $('log').prepend(li);
+}
+function traceSvg(el, pts, w, h, stroke) {
+  if (!pts || pts.length < 2) { el.innerHTML = `<text x="${w / 2}" y="${h / 2}" fill="#566373" font-size="14" text-anchor="middle">주차장에 들어가면 경로가 그려집니다</text>`; return; }
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]), pad = 26;
+  const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+  const sc = Math.min((w - 2 * pad) / Math.max(1, maxX - minX), (h - 2 * pad) / Math.max(1, maxY - minY));
+  const X = x => pad + (x - minX) * sc + ((w - 2 * pad) - (maxX - minX) * sc) / 2;
+  const Y = y => h - (pad + (y - minY) * sc + ((h - 2 * pad) - (maxY - minY) * sc) / 2);
+  const line = pts.map(p => `${X(p[0]).toFixed(1)},${Y(p[1]).toFixed(1)}`).join(' ');
+  const a = pts[0], b = pts[pts.length - 1];
+  el.innerHTML = `<polyline points="${line}" fill="none" stroke="${stroke}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${X(a[0])}" cy="${Y(a[1])}" r="7" fill="#3ddc84"/><text x="${X(a[0]) + 11}" y="${Y(a[1]) + 5}" fill="#e8edf3" font-size="13" font-weight="700">입구</text>
+    <circle cx="${X(b[0])}" cy="${Y(b[1])}" r="9" fill="${stroke}"/><text x="${X(b[0]) + 13}" y="${Y(b[1]) + 5}" fill="#e8edf3" font-size="13" font-weight="700">내 차</text>`;
+}
+/** Same payload as data/ShareLink.kt (URL fragment, no server). */
+function sharePayload(r) {
+  const o = { v: 1, t: Math.round(r.savedAt / 1000) };
+  if (r.placeName) o.n = r.placeName; if (r.floorLabel) o.f = r.floorLabel; if (r.spot) o.s = r.spot; if (r.floorSource) o.src = r.floorSource;
+  if (r.entranceLat != null) { o.la = Math.round(r.entranceLat * 1e6) / 1e6; o.lo = Math.round(r.entranceLon * 1e6) / 1e6; }
+  o.g = r.inGarage ? 1 : 0;
+  const max = 30, list = r.path, step = (list.length - 1) / (max - 1);
+  const ds = list.length <= max ? list : Array.from({ length: max }, (_, i) => list[Math.min(list.length - 1, Math.round(i * step))]);
+  o.p = ds.map(p => [Math.round(p[0]), Math.round(p[1])]);
+  const bytes = new TextEncoder().encode(JSON.stringify(o));
+  let bin = ''; bytes.forEach(b => bin += String.fromCharCode(b));
+  return { o, frag: '#d=' + btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '') };
+}
+/** Same rendering as web/index.html. */
+function renderPhone(r) {
+  if (!r) { $('phone').innerHTML = '<p class="muted">주차가 확정되면 여기에 표시됩니다.</p>'; $('link').textContent = ''; return; }
+  const { o: d, frag } = sharePayload(r);
+  const floorText = f => !f ? '' : f[0] === 'B' ? `지하 ${f.slice(1)}층` : `${f.replace('F', '')}층`;
+  let html = `<div class="muted">${esc(d.n || '주차 위치')} · 방금 주차</div>`;
+  html += d.g ? `<div class="pc"><div class="big">${esc(d.f || '?')}</div><div class="muted">${esc(floorText(d.f))}${d.src ? ' · ' + esc(d.src) : ''}</div>
+      ${d.s ? `<div class="spot">구역 ${esc(d.s)}</div>` : '<div class="muted" style="margin-top:8px">구역 번호는 인식하지 못했어요</div>'}</div>` : `<div class="pc"><div class="big">지상 주차</div></div>`;
+  if (d.p.length > 1) html += `<div class="pc"><div class="muted">입구에서 내 차까지 (차량이 기록한 경로)</div><svg id="ptrace" viewBox="0 0 300 170"></svg></div>`;
+  if (d.la && d.lo) html += `<a class="btn" target="_blank" rel="noopener" href="https://map.kakao.com/link/map/${encodeURIComponent((d.n || '주차장 입구').slice(0, 30))},${d.la},${d.lo}">주차장 입구 지도에서 보기</a>`;
+  html += `<p class="muted" style="margin-top:12px;font-size:12px">이 정보는 QR 안에만 담겨 있고 서버로 전송되지 않아요.</p>`;
+  $('phone').innerHTML = html;
+  if (d.p.length > 1) traceSvg($('ptrace'), d.p, 300, 170, '#7fb2ff');
+  $('link').innerHTML = `QR에 담기는 데이터 ${frag.length}자: <code>${esc(frag.slice(0, 70))}…</code>`;
+}
+function render() {
+  const s = App.ui; if (!s) return;
+  const ph = $('phase');
+  ph.textContent = { DRIVING: App.scenario ? '시연 · 주행 중' : '주행 중', IN_GARAGE: '주차장 안 · 진입 근거: ' + (s.entryCue ? CUE[s.entryCue] : '-'), STOPPED: '정차 · 주차 확인 중', PARKED: '주차 완료' }[s.phase];
+  ph.className = 'phase' + (s.phase === 'PARKED' ? ' p' : s.phase === 'DRIVING' ? '' : ' g');
+  const live = s.phase === 'IN_GARAGE' || s.phase === 'STOPPED', rec = s.latest;
+  const headHtml = (floor, spot) => [floor ? `<span class="fl">${esc(floor)}</span>` : null, spot ? `<span class="sp">${esc(spot)}</span>` : null].filter(Boolean).join(' · ') || '—';
+  if (live) {
+    const d = s.liveDecision;
+    $('head').innerHTML = headHtml(d && d.floorLabel ? d.floorLabel : s.estimate ? s.estimate.label + '?' : '…', d ? d.spot : null);
+    $('sub').textContent = s.lastSignText ? '방금 읽은 표지(모의): ' + s.lastSignText : '구역 표지를 기다리는 중';
+    $('evidence').textContent = s.estimate ? `고도·회전 추정 ${s.estimate.label} (${s.estimate.confidence}) · ${s.estimate.method}` : '';
+    traceSvg($('trace'), s.path.map(p => [p.x, p.y]), 400, 300, '#37d6c0');
+    $('dir').innerHTML = Directions.from(s.path, s.estimate ? s.estimate.level : null).map(x => `<li>${esc(x)}</li>`).join('');
+  } else if (rec) {
+    $('head').innerHTML = rec.inGarage ? headHtml(rec.floorLabel, rec.spot) : '지상 주차';
+    $('sub').textContent = [rec.placeName, '방금'].filter(Boolean).join(' · ');
+    const parts = [];
+    if (rec.inGarage) {
+      if (rec.floorSource) parts.push('층: ' + rec.floorSource);
+      if (rec.estimatedFloor) parts.push(rec.floorCrossCheckOk === true ? `추정 ${rec.estimatedFloor}와 일치` : rec.floorCrossCheckOk === false ? `추정 ${rec.estimatedFloor}와 다름` : `추정 ${rec.estimatedFloor} (${rec.estimateConfidence})`);
+      if (rec.spot) parts.push(`구역: 표지판 ${rec.spotVotes}회 인식(모의)`);
+      if (rec.entryCue) parts.push('진입: ' + rec.entryCue);
+    }
+    $('evidence').textContent = parts.join(' · ');
+    traceSvg($('trace'), rec.path, 400, 300, '#37d6c0');
+    $('dir').innerHTML = (rec.inGarage ? Directions.from(rec.points, rec.floorLevel) : ['지상 주차: 입구 좌표 저장됨']).map(x => `<li>${esc(x)}</li>`).join('');
+  } else {
+    $('head').textContent = '—'; $('sub').textContent = '주차하면 층과 구역 번호를 자동으로 기억해요'; $('evidence').textContent = '';
+    traceSvg($('trace'), [], 400, 300, '#37d6c0'); $('dir').innerHTML = '';
+  }
+  $('camera').textContent = '표지판 인식: ' + s.cameraStatus;
+  $('msg').textContent = s.message || '';
+  const say = $('say');
+  if (s.phase === 'PARKED' && s.spoken) { say.style.display = 'block'; say.innerHTML = `“${esc(s.spoken)}”<small>음성 안내 · TextToSpeech</small>`; } else say.style.display = 'none';
+  renderPhone(s.phase === 'PARKED' ? rec : null);
+}
+function syncButtons() {
+  $('btnGpsGood').classList.toggle('on', Sim.gpsGood); $('btnGpsBad').classList.toggle('on', !Sim.gpsGood);
+  $('btnLeft').classList.toggle('on', Sim.steer < 0); $('btnStraight').classList.toggle('on', Sim.steer === 0); $('btnRight').classList.toggle('on', Sim.steer > 0);
+  const busy = App.scenario;
+  ['btnGpsGood', 'btnGpsBad', 'btnLeft', 'btnStraight', 'btnRight', 'btnMove', 'btnEntry', 'btnDoor', 'ckRamp'].forEach(id => $(id).disabled = busy);
+  document.querySelectorAll('#signs button').forEach(b => b.disabled = busy);
+  $('btnPlay').textContent = busy ? '재생 중…' : '▶ 자동 재생';
+  $('btnPlay').disabled = busy;
+}
+
+$('btnPlay').onclick = () => Sim.play();
+$('btnReset').onclick = () => Sim.reset();
+$('btnGpsGood').onclick = () => { Sim.gpsGood = true; syncButtons(); };
+$('btnGpsBad').onclick = () => { Sim.gpsGood = false; syncButtons(); };
+$('ckRamp').onchange = e => { Sim.ramp = e.target.checked; };
+$('btnLeft').onclick = () => { Sim.steer = -30; syncButtons(); };
+$('btnStraight').onclick = () => { Sim.steer = 0; syncButtons(); };
+$('btnRight').onclick = () => { Sim.steer = 30; syncButtons(); };
+$('btnMove').onclick = () => Sim.move(5, Sim.steer, Sim.gpsGood ? 0.95 : 0.1, Sim.ramp ? -0.5 : 0);
+$('btnEntry').onclick = () => App.inject({ k: 'ManualGarageEntry', t: Sim.now() });
+$('btnDoor').onclick = () => App.inject({ k: 'DriverDoor', t: Sim.now(), open: true });
+document.querySelectorAll('#signs button').forEach(b => b.onclick = () => App.simulateSign(b.dataset.sign, Sim.now()));
+// 1 Hz clock tick so the stop timer fires in manual mode (the scenario brings its own clock)
+setInterval(() => { if (!App.scenario && App.detector) App.inject({ k: 'Tick', t: Date.now() }); }, 1000);
+
+Sim.reset();
+window.ParkTraceDemo = { App, Sim, SignTextParser, estimateFloor, Directions };
+</script>
+</body>
+</html>

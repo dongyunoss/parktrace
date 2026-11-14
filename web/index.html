@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>여기세웠지 · 내 차 위치</title>
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; font-family: -apple-system, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background: #0e1116; color: #fff; }
+  main { max-width: 480px; margin: 0 auto; padding: 24px 20px 40px; }
+  .muted { color: #a6b0bf; }
+  .card { background: #1a1f27; border-radius: 20px; padding: 20px; margin-top: 16px; }
+  .big { font-size: 64px; font-weight: 800; letter-spacing: -1px; line-height: 1.1; }
+  .spot { font-size: 40px; font-weight: 700; color: #7fb2ff; }
+  .fee { font-size: 44px; font-weight: 800; letter-spacing: -0.5px; margin: 6px 0 4px; font-variant-numeric: tabular-nums; }
+  .row { display: flex; justify-content: space-between; gap: 12px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 600; background: #2a3240; color: #a6b0bf; }
+  .badge.free { background: #163a26; color: #3ddc84; }
+  .badge.paid { background: #3a2a16; color: #ffb547; }
+  svg { width: 100%; height: 260px; display: block; }
+  a.btn, button.btn { display: block; width: 100%; box-sizing: border-box; text-align: center; background: #2f80ff; color: #fff; text-decoration: none; padding: 14px; border: 0; border-radius: 14px; margin-top: 12px; font: inherit; font-weight: 600; cursor: pointer; }
+  button.btn.ghost { background: #2a3240; }
+  button.btn:disabled { opacity: .5; cursor: default; }
+  #alertMsg { font-size: 13px; margin-top: 10px; }
+</style>
+</head>
+<body>
+<main id="app"><p class="muted">주차 정보를 불러오는 중…</p></main>
+<script>
+(function () {
+  const app = document.getElementById('app');
+  const m = location.hash.match(/d=([A-Za-z0-9_-]+)/);
+  if (!m) { app.innerHTML = '<p>차 화면의 QR 코드를 다시 찍어 주세요.</p>'; return; }
+  let d;
+  try {
+    const b64 = m[1].replace(/-/g, '+').replace(/_/g, '/');
+    const bin = atob(b64 + '==='.slice((b64.length + 3) % 4));
+    d = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0))));
+  } catch (e) { app.innerHTML = '<p>QR 데이터를 읽지 못했어요.</p>'; return; }
+
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const floorText = f => !f ? '' : f === 'RF' ? '옥상' : f[0] === 'B' ? `지하 ${f.slice(1)}층` : `${f.replace('F', '')}층`;
+  const ago = s => { const m = Math.round((Date.now() / 1000 - s) / 60); return m < 1 ? '방금' : m < 60 ? `${m}분 전` : `${Math.floor(m / 60)}시간 ${m % 60}분 전`; };
+  const hm = t => new Date(t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
+  const won = v => v.toLocaleString('ko-KR') + '원';
+  const dur = ms => { const m = Math.max(0, Math.round(ms / 60000)); return m < 60 ? `${m}분` : `${Math.floor(m / 60)}시간 ${m % 60}분`; };
+  const minText = m => m >= 60 && m % 60 === 0 ? `${m / 60}시간` : m > 60 ? `${Math.floor(m / 60)}시간 ${m % 60}분` : `${m}분`;
+
+  // ---- fee clock (same formula as core/FeePolicy.kt: every started unit is charged, daily cap per started 24 h)
+  const MIN = 60000, DAY = 24 * 60 * MIN;
+  const fee = (d.g && d.e && Array.isArray(d.fp)) ? (() => {
+    const [free, unit, price, max] = d.fp;
+    const enter = d.e * 1000, freeEnd = enter + free * MIN, u = unit * MIN;
+    const at = t => {
+      const over = t - freeEnd; if (over <= 0) return 0;
+      let f = Math.ceil(over / u) * price;
+      if (max > 0) f = Math.min(f, Math.max(1, Math.ceil((t - enter) / DAY)) * max);
+      return f;
+    };
+    const next = t => {
+      if (price === 0) return null;
+      const n = t < freeEnd ? freeEnd : freeEnd + Math.ceil((t - freeEnd) / u) * u;
+      return at(n + 1) > at(t) ? n : null;
+    };
+    const rule = [free > 0 ? `최초 ${minText(free)} 무료` : '무료 시간 없음',
+                  price > 0 ? `이후 ${minText(unit)}당 ${won(price)}` : '이후에도 무료'].concat(max > 0 ? [`1일 최대 ${won(max)}`] : []).join(' · ');
+    return { enter, freeEnd, unit, price, at, next, rule };
+  })() : null;
+
+  let html = `<div class="muted">${esc(d.n || '주차 위치')} · ${ago(d.t)} 주차</div>`;
+  if (d.g) {
+    html += `<div class="card"><div class="big">${esc(d.f || '?')}</div>
+             <div class="muted">${esc(floorText(d.f))}${d.src ? ' · ' + esc(d.src) : ''}</div>
+             ${d.s ? `<div class="spot" style="margin-top:12px">구역 ${esc(d.s)}</div>` : '<div class="muted" style="margin-top:12px">구역 번호는 인식하지 못했어요</div>'}</div>`;
+  } else {
+    html += `<div class="card"><div class="big">지상 주차</div></div>`;
+  }
+  if (fee) {
+    html += `<div class="card" id="feeCard"></div>`;
+  }
+
+  const p = d.p || [];
+  if (p.length > 1) {
+    const xs = p.map(q => q[0]), ys = p.map(q => q[1]);
+    const minX = Math.min(...xs), maxX = Math.max(...xs), minY = Math.min(...ys), maxY = Math.max(...ys);
+    const w = 400, h = 260, pad = 24;
+    const sc = Math.min((w - 2 * pad) / Math.max(1, maxX - minX), (h - 2 * pad) / Math.max(1, maxY - minY));
+    const X = x => pad + (x - minX) * sc + ((w - 2 * pad) - (maxX - minX) * sc) / 2;
+    const Y = y => h - (pad + (y - minY) * sc + ((h - 2 * pad) - (maxY - minY) * sc) / 2);
+    const pts = p.map(q => `${X(q[0]).toFixed(1)},${Y(q[1]).toFixed(1)}`).join(' ');
+    const [ex, ey] = p[0], [cx, cy] = p[p.length - 1];
+    html += `<div class="card"><div class="muted">입구에서 내 차까지 (차량이 기록한 경로)</div>
+      <svg viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="#7fb2ff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="${X(ex)}" cy="${Y(ey)}" r="8" fill="#3ddc84"/><text x="${X(ex) + 12}" y="${Y(ey) + 5}" fill="#fff" font-size="14">입구</text>
+      <circle cx="${X(cx)}" cy="${Y(cy)}" r="10" fill="#2f80ff"/><text x="${X(cx) + 14}" y="${Y(cy) + 5}" fill="#fff" font-size="14">내 차</text></svg></div>`;
+  }
+  if (d.la && d.lo) {
+    const name = encodeURIComponent((d.n || '주차장 입구').slice(0, 30));
+    html += `<a class="btn" href="https://map.kakao.com/link/map/${name},${d.la},${d.lo}">주차장 입구 지도에서 보기</a>`;
+  }
+  html += `<p class="muted" style="margin-top:24px;font-size:13px">이 정보는 QR 안에만 담겨 있고 서버로 전송되지 않아요. 요금은 차에 입력된 요금표로 계산한 예상 금액이에요.</p>`;
+  app.innerHTML = html;
+
+  if (!fee) return;
+
+  // ---- fee card (re-rendered every 15 s)
+  const feeCard = document.getElementById('feeCard');
+  let alertsOn = false;
+  function renderFee() {
+    const now = Date.now();
+    const inFree = now < fee.freeEnd;
+    const nx = fee.next(now);
+    feeCard.innerHTML = `
+      <div class="muted">주차 요금 <span class="badge ${inFree ? 'free' : 'paid'}">${inFree ? '무료 시간' : '요금 발생 중'}</span></div>
+      <div class="fee">${won(fee.at(now))}</div>
+      <div class="row"><span class="muted">진입</span><span>${hm(fee.enter)} · ${dur(now - fee.enter)} 경과</span></div>
+      <div class="row"><span class="muted">무료</span><span>${hm(fee.freeEnd)}까지${inFree ? ` (${dur(fee.freeEnd - now)} 남음)` : ' (끝남)'}</span></div>
+      ${nx ? `<div class="row"><span class="muted">다음 요금</span><span>${hm(nx)}부터 ${won(fee.at(nx + 1))}</span></div>` : ''}
+      <div class="muted" style="font-size:13px;margin-top:10px">${esc(fee.rule)}</div>
+      <button class="btn" id="btnAlerts" ${alertsOn ? 'disabled' : ''}>${alertsOn ? '알림 켜짐' : '요금 알림 켜기'}</button>
+      <button class="btn ghost" id="btnIcs" ${now >= fee.freeEnd - 10 * MIN ? 'disabled' : ''}>캘린더에 무료 종료 알림 추가</button>
+      <div class="muted" id="alertMsg">${alertMsg}</div>`;
+    document.getElementById('btnAlerts').onclick = enableAlerts;
+    document.getElementById('btnIcs').onclick = downloadIcs;
+  }
+  let alertMsg = '';
+  const say = t => { alertMsg = t; renderFee(); };
+
+  // ---- browser notifications: work while this page stays open (no server, so no push when it is closed)
+  async function enableAlerts() {
+    if (!('Notification' in window)) { say('이 브라우저는 알림을 지원하지 않아요. 아래 캘린더 알림을 써 주세요.'); return; }
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') { say('알림이 차단되어 있어요. 브라우저 설정에서 허용하거나 캘린더 알림을 써 주세요.'); return; }
+    let reg = null;
+    if ('serviceWorker' in navigator) {
+      try { await navigator.serviceWorker.register('sw.js'); reg = await navigator.serviceWorker.ready; } catch (_) { reg = null; }
+    }
+    const show = (title, body) => {
+      const opts = { body, tag: 'parktrace-' + title, icon: undefined };
+      if (reg) reg.showNotification(title, opts); else { try { new Notification(title, opts); } catch (_) {} }
+    };
+    const now = Date.now();
+    const plan = [
+      [fee.freeEnd - 10 * MIN, '무료 주차 10분 남음', `${hm(fee.freeEnd)}부터 요금이 붙어요 · ${fee.rule}`],
+      [fee.freeEnd, '무료 주차 끝', `지금부터 ${minText(fee.unit)}마다 ${won(fee.price)}씩 올라가요`],
+    ];
+    for (let h = 1; h <= 12; h++) {
+      const t = fee.freeEnd + h * 60 * MIN;
+      plan.push([t, `주차 ${dur(t - fee.enter)} · ${won(fee.at(t))}`, `지금 나가면 ${won(fee.at(t))}이에요`]);
+    }
+    let n = 0;
+    for (const [t, title, body] of plan) {
+      if (t <= now || fee.price === 0 && t > fee.freeEnd) continue;
+      setTimeout(() => show(title, body), t - now); n++;
+    }
+    show('요금 알림을 켰어요', `무료 ${hm(fee.freeEnd)}까지 · 현재 ${won(fee.at(now))}`);
+    alertsOn = true;
+    say(`알림 ${n}개 예약됨. 이 페이지를 열어 둔 동안 알려 드려요. 페이지를 닫아도 받으려면 캘린더 알림을 추가하세요.`);
+  }
+
+  // ---- calendar alarm: reliable even when the browser is closed (phone calendar fires it)
+  function downloadIcs() {
+    const dt = t => new Date(t).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+    const ics = s => String(s).replace(/[\\,;]/g, c => '\\' + c).replace(/\n/g, '\\n');
+    const place = d.n || '주차장';
+    const where = [d.f, d.s].filter(Boolean).join(' · ');
+    const lines = [
+      'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ParkTrace//KO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:parktrace-${d.e}@parktrace`, `DTSTAMP:${dt(Date.now())}`,
+      `DTSTART:${dt(fee.freeEnd)}`, `DTEND:${dt(fee.freeEnd + 10 * MIN)}`,
+      `SUMMARY:${ics('무료 주차 종료 · ' + place)}`,
+      `DESCRIPTION:${ics(`${where ? where + '\n' : ''}진입 ${hm(fee.enter)} · ${fee.rule}`)}`,
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:-PT10M', `DESCRIPTION:${ics('무료 주차 10분 남음')}`, 'END:VALARM',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'TRIGGER:PT0M', `DESCRIPTION:${ics('무료 주차 끝 · 요금이 붙기 시작해요')}`, 'END:VALARM',
+      'END:VEVENT', 'END:VCALENDAR',
+    ];
+    const blob = new Blob([lines.join('\r\n') + '\r\n'], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'parktrace-free-end.ics';
+    document.body.appendChild(a); a.click(); a.remove();
+    say('캘린더 파일을 열어 일정에 추가하면, 무료 종료 10분 전과 종료 시각에 폰이 알려 줘요.');
+  }
+
+  renderFee();
+  setInterval(renderFee, 15000);
+})();
+</script>
+</body>
+</html>
