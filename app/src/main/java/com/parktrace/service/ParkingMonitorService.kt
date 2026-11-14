@@ -174,9 +174,10 @@ class ParkingMonitorService : Service() {
             ParkTraceState.update { it.copy(parkingMode = s.reverse) }
             // Backing into the bay: hand the screen to the car's own camera view (it comes back at P).
             // With a real gear signal the car opens its camera view by itself in R; opening it a second time from
-            // here made the emulator crawl (R to P took 33 s). So only the in-app demo, which has no real gear, does it.
+            // here made the emulator crawl (R to P took 33 s). The in-app demo has no real gear: it shows its own
+            // simulated rear-camera picture of a car park instead (the car's camera view has a fixed road video).
             if (s.reverse && !was && detector.phase == ParkingDetector.Phase.IN_GARAGE) {
-                if (demoMode) openCarCamera() else {
+                if (demoMode) showSimulatedCamera() else {
                     // the car's camera view is coming up over this app: stop drawing behind it
                     ParkTraceState.update { it.copy(cameraUp = true) }
                     watchCamera()
@@ -439,24 +440,20 @@ class ParkingMonitorService : Service() {
     }
 
     /**
-     * Opens the car's camera screen (the Pleos camera app's own launcher entry, the same one as its icon in the
-     * app bar). In a real car the system does this by itself in R; this covers the cases where it does not.
+     * In-app demo only: a simulated rear-camera picture of a car park, drawn by this app over its own screen
+     * (RearCameraView). It stands in for the car's camera view, which this app can neither feed nor change.
      */
-    private fun openCarCamera() {
-        val intent = packageManager.getLaunchIntentForPackage(CAR_CAMERA_PACKAGE)
-            ?: run { Log.w(TAG, "car camera app not found"); return }
-        // stop drawing first: frames drawn behind the camera view block this app for seconds
-        ParkTraceState.update { it.copy(cameraUp = true) }
-        runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onSuccess { Log.i(TAG, "car camera view opened"); watchCamera() }
-            .onFailure { Log.w(TAG, "car camera start refused", it); ParkTraceState.update { u -> u.copy(cameraUp = false) } }
+    private fun showSimulatedCamera() {
+        ParkTraceState.update { it.copy(cameraUp = true, simulatedCamera = true) }
+        Log.i(TAG, "simulated rear camera view shown")
+        watchCamera()
     }
 
     private var cameraOpenedAt = 0L
     /** Spoken parking guidance that came up during the camera view; said once that view has closed. */
     private var heldGuidance: String? = null
     private val toFront = Runnable {
-        ParkTraceState.update { it.copy(cameraUp = false) }
+        ParkTraceState.update { it.copy(cameraUp = false, simulatedCamera = false) }
         bringAppToFront()
         heldGuidance?.let { line -> heldGuidance = null; Log.i(TAG, "camera view closed: guidance \"$line\""); sdk.post { announcer.speak(line) } }
     }
@@ -472,7 +469,8 @@ class ParkingMonitorService : Service() {
      * and has then stayed on screen for about 3 seconds.
      */
     private fun returnFromCamera() {
-        val total = CAMERA_APPEAR_MS + CAMERA_SHOWN_MS
+        // the simulated picture is on screen at once; only the car's own camera view needs time to come up
+        val total = (if (ParkTraceState.ui.simulatedCamera) 0L else CAMERA_APPEAR_MS) + CAMERA_SHOWN_MS
         val wait = if (cameraOpenedAt == 0L) 0L else (cameraOpenedAt + total - android.os.SystemClock.elapsedRealtime()).coerceIn(0L, total)
         main.removeCallbacks(toFront)
         main.postDelayed(toFront, wait)
@@ -538,9 +536,8 @@ class ParkingMonitorService : Service() {
     companion object {
         private const val TAG = "ParkTrace/Service"
         const val RETURN_NOTI_ID = 44
-        private const val CAR_CAMERA_PACKAGE = "ai.umos.car.evs"
-        /** How long the car's camera view stays on screen, once it is fully up, before this app shows the result. */
-        private const val CAMERA_SHOWN_MS = 3_000L
+        /** How long the camera view stays on screen, once it is fully up, before this app shows the result. */
+        const val CAMERA_SHOWN_MS = 3_000L
         /**
          * Time allowed for the camera view to come up fully (its picture included) after it is called up.
          * Measured on the Pleos Connect emulator: still this app at 1.6 s, the camera picture by 2.3 to 3.2 s.

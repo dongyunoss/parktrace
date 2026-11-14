@@ -28,6 +28,8 @@ object ParkTraceState {
         val message: String? = null,
         /** The car's camera view is in front of this app: nothing is drawn meanwhile. */
         val cameraUp: Boolean = false,
+        /** In-app demo: the camera view in front is this app's own simulated rear-camera picture. */
+        val simulatedCamera: Boolean = false,
         /** Metres along the path to the entrance barrier, when the garage was entered by geofence. */
         val gateMeters: Double? = null,
         /** Backing into a bay (gear R): the car's surround-camera screen is in front. */

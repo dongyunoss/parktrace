@@ -45,6 +45,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var feeTitle: TextView
     private lateinit var feeBar: android.widget.ProgressBar
     private lateinit var guide: TextView
+    private lateinit var rearCamera: RearCameraView
     private var demo: DemoScenario? = null
 
     private val observer: (ParkTraceState.Ui) -> Unit = { render(it) }
@@ -69,6 +70,9 @@ class MainActivity : AppCompatActivity() {
         feeTitle = findViewById(R.id.feeTitle)
         feeBar = findViewById(R.id.feeBar)
         guide = findViewById(R.id.guide)
+        // simulated rear-camera picture (in-app demo): covers the whole app while it is up
+        rearCamera = RearCameraView(this).apply { visibility = View.GONE }
+        addContentView(rearCamera, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 
         findViewById<Button>(R.id.btnQr).setOnClickListener { showQr() }
         findViewById<Button>(R.id.btnManual).setOnClickListener { ParkTraceState.service?.manualGarageEntry() }
@@ -198,7 +202,12 @@ class MainActivity : AppCompatActivity() {
     // ------------------------------------------------------------------ rendering
 
     private fun render(s: ParkTraceState.Ui) {
-        // behind the car's camera view: draw nothing (see ParkingMonitorService.openCarCamera)
+        // in-app demo: the camera view is this app's own simulated picture
+        if (s.simulatedCamera && rearCamera.visibility != View.VISIBLE) {
+            rearCamera.visibility = View.VISIBLE
+            rearCamera.play(ParkingMonitorService.CAMERA_SHOWN_MS)
+        } else if (!s.simulatedCamera) rearCamera.visibility = View.GONE
+        // behind a camera view: draw nothing (frames drawn behind the car's camera view block this app for seconds)
         scene.visibility = if (s.cameraUp) View.INVISIBLE else View.VISIBLE
         if (s.cameraUp) return
         val t0 = System.nanoTime()
