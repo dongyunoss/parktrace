@@ -131,6 +131,23 @@
                 android:layout_marginStart="16dp" />
         </LinearLayout>
 
+        <!-- Guidance line: what the app has just done (e.g. "저장 완료: 지하 1층 C-15 구역"), shown for a few seconds -->
+        <TextView
+            android:id="@+id/guide"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/card_inner_bg"
+            android:fontFamily="sans-serif-medium"
+            android:maxLines="2"
+            android:paddingStart="28dp"
+            android:paddingTop="18dp"
+            android:paddingEnd="28dp"
+            android:paddingBottom="18dp"
+            android:textColor="@color/accent"
+            android:textSize="26sp"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/feeCard"
             android:layout_width="match_parent"

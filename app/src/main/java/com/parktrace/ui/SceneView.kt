@@ -65,8 +65,13 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         return x
     }
 
-    fun setScene(s: ParkingScene?, label: String) {
-        scene = s; carLabel = label
+    /** Camera side: behind the car while it drives (chase view), in front of it for the parked result. */
+    private var frontView = false
+    private fun camTarget(carAngle: Double) = if (frontView) carAngle + Math.PI else carAngle
+
+    /** @param front look at the car from its front (the saved parking position) instead of from behind */
+    fun setScene(s: ParkingScene?, label: String, front: Boolean = false) {
+        scene = s; carLabel = label; frontView = front
         if (s == null) { hasPose = false; invalidate(); return }
         val a = atan2(s.car.hx, s.car.hy)
         val now = android.os.SystemClock.uptimeMillis()
@@ -75,7 +80,7 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
             hasPose = true
             curX = s.car.x; curY = s.car.y; curA = a
             fromX = curX; fromY = curY; fromA = a; toX = curX; toY = curY; toA = a
-            camYaw = a; animDur = 0L; lastChange = now
+            camYaw = camTarget(a); animDur = 0L; lastChange = now
         } else if (Math.abs(s.car.x - toX) > 0.01 || Math.abs(s.car.y - toY) > 0.01 || Math.abs(angDiff(a - toA)) > 0.002) {
             fromX = curX; fromY = curY; fromA = curA
             toX = s.car.x; toY = s.car.y; toA = a
@@ -175,8 +180,10 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         }
         curA = fromA + angDiff(toA - fromA) * k
         val dt = (now - lastFrame).coerceIn(0L, 200L) / 1000.0; lastFrame = now
-        camYaw += angDiff(curA - camYaw) * (1 - Math.exp(-dt / CAM_TAU))
-        val moving = k < 1.0 || Math.abs(angDiff(curA - camYaw)) > 0.004
+        // parked: the camera swings round to the front of the car
+        val target = camTarget(curA)
+        camYaw += angDiff(target - camYaw) * (1 - Math.exp(-dt / CAM_TAU))
+        val moving = k < 1.0 || Math.abs(angDiff(target - camYaw)) > 0.004
         // the route line stops at the car while it is still on its way to the newest point
         val route = if (k >= 1.0) full.path else {
             val rest = total * (1 - k)

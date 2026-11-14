@@ -44,6 +44,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var feeCard: LinearLayout
     private lateinit var feeTitle: TextView
     private lateinit var feeBar: android.widget.ProgressBar
+    private lateinit var guide: TextView
     private var demo: DemoScenario? = null
 
     private val observer: (ParkTraceState.Ui) -> Unit = { render(it) }
@@ -67,6 +68,7 @@ class MainActivity : AppCompatActivity() {
         feeCard = findViewById(R.id.feeCard)
         feeTitle = findViewById(R.id.feeTitle)
         feeBar = findViewById(R.id.feeBar)
+        guide = findViewById(R.id.guide)
 
         findViewById<Button>(R.id.btnQr).setOnClickListener { showQr() }
         findViewById<Button>(R.id.btnManual).setOnClickListener { ParkTraceState.service?.manualGarageEntry() }
@@ -105,6 +107,7 @@ class MainActivity : AppCompatActivity() {
     override fun onStop() {
         ParkTraceState.uiVisible = false
         main.removeCallbacks(feeTicker)
+        main.removeCallbacks(hideGuide); guide.visibility = View.GONE
         main.removeCallbacks(dotTicker); dotsRunning = false
         ParkTraceState.remove(observer)
         super.onStop()
@@ -204,7 +207,22 @@ class MainActivity : AppCompatActivity() {
         if (ms > 30) android.util.Log.w("ParkTrace/UI", "slow render: $ms ms")
     }
 
+    // ---- guidance line: appears when the message changes, goes away by itself
+    private var shownMessage: String? = null
+    private val hideGuide = Runnable { guide.visibility = View.GONE }
+
+    private fun renderGuide(message: String?) {
+        if (message == shownMessage) return
+        shownMessage = message
+        main.removeCallbacks(hideGuide)
+        if (message == null) { guide.visibility = View.GONE; return }
+        guide.text = message
+        guide.visibility = View.VISIBLE
+        main.postDelayed(hideGuide, GUIDE_MS)
+    }
+
     private fun renderInner(s: ParkTraceState.Ui) {
+        renderGuide(s.message)
         phase.text = when (s.phase) {
             Phase.DRIVING -> if (s.latest != null) "저장된 위치" else "주행 중"
             Phase.IN_GARAGE -> if (s.parkingMode) "주차 중" else if (s.gateMeters != null && (s.path.lastOrNull()?.distance ?: 0.0) < s.gateMeters) "주차장 입구 접근 중" else "주차장 안"
@@ -242,7 +260,8 @@ class MainActivity : AppCompatActivity() {
             place.text = if (rec.inGarage) parkName(rec.placeName) else rec.placeName ?: "지상 주차"
             subline.text = if (rec.savedAt > System.currentTimeMillis() - 60_000L) "방금 전" else DateUtils.getRelativeTimeSpanString(rec.savedAt).toString()
             renderFee(rec.enteredAt, rec.fee)
-            scene.setScene(s.scene, "내 차")
+            // the saved position is shown from the front of the car
+            scene.setScene(s.scene, "내 차", front = true)
         } else {
             loadingFloor = false; loadingSpot = false
             floorCaption.text = "층"
@@ -311,5 +330,9 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    companion object { private const val REQ_PERMS = 7 }
+    companion object {
+        private const val REQ_PERMS = 7
+        /** How long the guidance line stays on screen. */
+        private const val GUIDE_MS = 8_000L
+    }
 }

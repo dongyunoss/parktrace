@@ -178,8 +178,8 @@ class ParkingMonitorService : Service() {
             if (s.reverse && !was && detector.phase == ParkingDetector.Phase.IN_GARAGE) {
                 if (demoMode) openCarCamera() else {
                     // the car's camera view is coming up over this app: stop drawing behind it
-                    cameraOpenedAt = android.os.SystemClock.elapsedRealtime()
                     ParkTraceState.update { it.copy(cameraUp = true) }
+                    watchCamera()
                 }
             }
             // out of R again (parked, or driving on): this app comes back
@@ -342,7 +342,9 @@ class ParkingMonitorService : Service() {
                 if (garages.learn(name, session.entrance.lat, session.entrance.lon)) sdk.post { location.registerGarageAlerts() }
             }
             val spoken = record.spoken()
-            sdk.post { announcer.speak(spoken) }
+            // Gear P while the car's camera view is still up: the guidance waits until that view has closed
+            // (see toFront). The on-screen line waits by itself, nothing is drawn behind the camera view.
+            if (ParkTraceState.ui.cameraUp) heldGuidance = spoken else sdk.post { announcer.speak(spoken) }
             enteredAt = null
             ParkTraceState.update {
                 it.copy(latest = record, message = "저장 완료: ${record.headline()}", enteredAt = null, feePolicy = null, scene = sceneFor(record))
@@ -446,23 +448,35 @@ class ParkingMonitorService : Service() {
         // stop drawing first: frames drawn behind the camera view block this app for seconds
         ParkTraceState.update { it.copy(cameraUp = true) }
         runCatching { startActivity(intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-            .onSuccess { cameraOpenedAt = android.os.SystemClock.elapsedRealtime(); Log.i(TAG, "car camera view opened") }
+            .onSuccess { Log.i(TAG, "car camera view opened"); watchCamera() }
             .onFailure { Log.w(TAG, "car camera start refused", it); ParkTraceState.update { u -> u.copy(cameraUp = false) } }
     }
 
     private var cameraOpenedAt = 0L
+    /** Spoken parking guidance that came up during the camera view; said once that view has closed. */
+    private var heldGuidance: String? = null
     private val toFront = Runnable {
         ParkTraceState.update { it.copy(cameraUp = false) }
         bringAppToFront()
+        heldGuidance?.let { line -> heldGuidance = null; Log.i(TAG, "camera view closed: guidance \"$line\""); sdk.post { announcer.speak(line) } }
     }
 
-    /** Parked (or stopped in P): back to this app, once the camera view has been up for about 3 seconds. */
+    /** The camera view is being called up now: the time it needs to come up fully counts from here. */
+    private fun watchCamera() {
+        cameraOpenedAt = android.os.SystemClock.elapsedRealtime()
+        main.removeCallbacks(toFront)
+    }
+
+    /**
+     * Parked (or stopped in P): back to this app, but only after the camera view has had time to come up fully
+     * and has then stayed on screen for about 3 seconds.
+     */
     private fun returnFromCamera() {
-        val wait = if (cameraOpenedAt == 0L) 0L else (cameraOpenedAt + CAMERA_MS - android.os.SystemClock.elapsedRealtime()).coerceIn(0L, CAMERA_MS)
+        val total = CAMERA_APPEAR_MS + CAMERA_SHOWN_MS
+        val wait = if (cameraOpenedAt == 0L) 0L else (cameraOpenedAt + total - android.os.SystemClock.elapsedRealtime()).coerceIn(0L, total)
         main.removeCallbacks(toFront)
         main.postDelayed(toFront, wait)
     }
-
     private fun mainIntent() = Intent(this, MainActivity::class.java)
         .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
 
@@ -525,11 +539,14 @@ class ParkingMonitorService : Service() {
         private const val TAG = "ParkTrace/Service"
         const val RETURN_NOTI_ID = 44
         private const val CAR_CAMERA_PACKAGE = "ai.umos.car.evs"
+        /** How long the car's camera view stays on screen, once it is fully up, before this app shows the result. */
+        private const val CAMERA_SHOWN_MS = 3_000L
         /**
-         * How long this app waits, at least, after the car's camera view is called up before it shows the result:
-         * about 1.5 s for the camera view to appear, then about 3 s of it on screen.
+         * Time allowed for the camera view to come up fully (its picture included) after it is called up.
+         * Measured on the Pleos Connect emulator: still this app at 1.6 s, the camera picture by 2.3 to 3.2 s.
+         * An app cannot observe this: losing "top resumed" comes within milliseconds of the call.
          */
-        private const val CAMERA_MS = 4_500L
+        private const val CAMERA_APPEAR_MS = 3_500L
         /** The door opening again only counts as "back in the car" after this long away (not while still getting out). */
         const val MIN_AWAY_MS = 30_000L
         private const val NOTI_ID = 42
