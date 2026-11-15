@@ -538,6 +538,8 @@ class ParkingMonitorService : Service() {
         const val RETURN_NOTI_ID = 44
         /** How long the camera view stays on screen, once it is fully up, before this app shows the result. */
         const val CAMERA_SHOWN_MS = 3_000L
+        /** In-app demo: how long the simulated rear-camera picture takes to move in (the reverse manoeuvre: 6 demo steps). */
+        const val DEMO_REVERSE_MS = 6_000L
         /**
          * Time allowed for the camera view to come up fully (its picture included) after it is called up.
          * Measured on the Pleos Connect emulator: still this app at 1.6 s, the camera picture by 2.3 to 3.2 s.

@@ -197,7 +197,7 @@ class MainActivity : AppCompatActivity() {
         // in-app demo: the camera view is this app's own simulated picture
         if (s.simulatedCamera && rearCamera.visibility != View.VISIBLE) {
             rearCamera.visibility = View.VISIBLE
-            rearCamera.play(ParkingMonitorService.CAMERA_SHOWN_MS)
+            rearCamera.play(ParkingMonitorService.DEMO_REVERSE_MS)
         } else if (!s.simulatedCamera) rearCamera.visibility = View.GONE
         // behind a camera view: draw nothing (frames drawn behind the car's camera view block this app for seconds)
         scene.visibility = if (s.cameraUp) View.INVISIBLE else View.VISIBLE

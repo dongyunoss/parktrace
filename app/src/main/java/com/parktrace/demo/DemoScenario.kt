@@ -6,7 +6,7 @@ import com.parktrace.core.Signal
 import com.parktrace.service.ParkingMonitorService
 
 /**
- * Deterministic PT demo (≈ 20 s): road → public car park gate → straight ramp down to B1 → B1 aisle → right turn → park at C-15.
+ * Deterministic PT demo (≈ 40 s): road → public car park gate → straight ramp down to B1 → B1 aisle → right turn → park at C-15.
  *
  * Uses a synthetic clock (1 step = 1 s of vehicle time) so detector timers behave exactly like
  * on the road, while the playback itself is sped up. Pillar signs are injected as text,
@@ -21,7 +21,6 @@ class DemoScenario(private val service: ParkingMonitorService, private val onDon
     private val steps = mutableListOf<() -> Unit>()
     private var clock = System.currentTimeMillis()
     private var trip = 0f
-    private var fastFrom = Int.MAX_VALUE
     private var lat = 37.5450
     private var lon = 127.2240
     private var alt = 32.0
@@ -70,9 +69,7 @@ class DemoScenario(private val service: ParkingMonitorService, private val onDon
         idle(1) { now -> service.inject(Signal.Brake(now, true)); service.onSignText(listOf("B1", "CI5"), now) }
         // 6. back in: gear R, wheel to the right, a quarter circle (4.14 m radius), then straight back
         idle(1) { now -> service.inject(Signal.Gear(now, park = false, reverse = true)); service.inject(Signal.Brake(now, false)) }
-        // from here the car's camera view is in front and the manoeuvre is not visible: the rest is played in one
-        // go, so the parking is saved by the time the camera view closes (~3 s)
-        fastFrom = steps.size
+        // the rear-camera picture is in front for the whole manoeuvre (it moves in over ParkingMonitorService.DEMO_REVERSE_MS)
         repeat(4) { drive(1.626f, 35f, 0.15f) }
         drive(1.36f, 0f, 0.15f, sign = "C15")
         // 7. gear P -> saved and announced; then the driver gets out
@@ -87,11 +84,6 @@ class DemoScenario(private val service: ParkingMonitorService, private val onDon
             main.postDelayed({ service.setDemoMode(false); onDone() }, 1500)
             return
         }
-        if (i >= fastFrom) {
-            for (j in i until steps.size) steps[j]()
-            play(steps.size)
-            return
-        }
         steps[i]()
         main.postDelayed({ play(i + 1) }, STEP_MS)
     }
@@ -101,5 +93,5 @@ class DemoScenario(private val service: ParkingMonitorService, private val onDon
         service.setDemoMode(false)
     }
 
-    companion object { private const val STEP_MS = 450L }
+    companion object { private const val STEP_MS = 1000L }
 }
