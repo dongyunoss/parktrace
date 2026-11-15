@@ -1,5 +1,5 @@
 ﻿<#
-  여기세웠지 - Pleos Connect 에뮬레이터 "실제 주행" 시연 스크립트
+  ParkTrace - Pleos Connect 에뮬레이터 "실제 주행" 시연 스크립트
 
   실제 신호 경로로 주행을 흉내 냅니다 (앱 안의 '시연 모드'와 달리 SDK를 그대로 거칩니다).
     - GPS (위도/경도/고도)        : adb emu geo fix          -> Pleos FusedLocation SDK

@@ -27,7 +27,9 @@ android {
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Contest submission: sign with your own release keystore (Build > Generate Signed APK).
+            // Contest submission build: signed with the Android debug key so the APK installs as is.
+            // Use a real release keystore before any store release.
+            signingConfig = signingConfigs.getByName("debug")
         }
     }
 

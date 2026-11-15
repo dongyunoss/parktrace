@@ -1,4 +1,4 @@
-# 여기세웠지 테스트 절차 (Pleos Connect Emulator + Virtual Console)
+# ParkTrace 테스트 절차 (Pleos Connect Emulator + Virtual Console)
 
 Pleos 공식 가이드 [Virtual Console 테스트 가이드](https://document.pleos.ai/docs/pleos-only/app-test-guide/virtual-console-guide)의 방식으로 테스트합니다. **Emulation Controls에서 카드를 골라 값을 바꾸고, 에뮬레이터와 앱에서 결과를 확인**하는 방식입니다. 실제 주행처럼 이어지는 시연은 B장의 스크립트로 합니다.
 

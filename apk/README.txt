@@ -1,1 +1,2 @@
-Release APK goes here: 팀명_여기세웠지_release.apk
+Release APK: ParkTrace_ParkTrace_release.apk (team ParkTrace, app ParkTrace)
+Built with: gradlew assembleRelease

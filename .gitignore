@@ -15,7 +15,7 @@
 .kotlin/
 
 # Proposal form: has personal-information fields, kept local
-/docs/기획서_여기세웠지.docx
+/docs/기획서_ParkTrace.docx
 
 __pycache__/
 *.pyc
