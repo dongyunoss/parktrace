@@ -95,7 +95,7 @@ adb forward tcp:8088 tcp:8088
 
 이 앱 시연에 쓰는 카드: Convenience의 Door Position(운전석 문 열기), Door Lock, Seat Occupancy / Motion의 Steering Angle, Brake Pedal.
 
-주의: **Odometer 카드는 1 km 단위로만 바뀝니다.** 이 앱은 미터 단위 주행거리로 경로를 그리기 때문에, Virtual Console로 주차장 안 이동을 손으로 재현하기는 어렵습니다. 이 카드가 앱이 받는 트립 주행거리 값을 바꾸는지도 확인하지 못했습니다. 경로와 층 추정은 앱의 `시연 모드`로 보여 주고, Virtual Console은 문 열림 같은 실제 신호 반응을 보여 주는 데 쓰세요. **Virtual Console 카드 목록에는 위치와 속도가 없습니다.** 그래서 에뮬레이터에서는 앱의 `주차장 진입` 버튼이나 `시연 모드`로 진입을 알립니다.
+주의: **Odometer 카드는 1 km 단위로만 바뀝니다.** 이 앱은 미터 단위 주행거리로 경로를 그리기 때문에, Virtual Console로 주차장 안 이동을 손으로 재현하기는 어렵습니다. 이 카드가 앱이 받는 트립 주행거리 값을 바꾸는지도 확인하지 못했습니다. 경로와 층 추정은 앱의 `시연 모드`로 보여 주고, Virtual Console은 문 열림 같은 실제 신호 반응을 보여 주는 데 쓰세요. **Virtual Console 카드 목록에는 위치와 속도가 없습니다.** 그래서 에뮬레이터에서는 `adb` 진입 신호(TESTING.md A1)나 `시연 모드`로 진입을 알립니다.
 
 ### 2.5 계정과 키
 
@@ -276,8 +276,8 @@ android.permission.ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATI
 3. **단위 테스트**: `./gradlew test`. `app/src/test`의 5개 파일이 통과해야 합니다. 같은 기대값을 브라우저 시연기에서는 이미 확인했습니다.
 4. **빌드**: `./gradlew assembleDebug`. 컴파일 오류가 나면 3장의 표와 API 레퍼런스를 보고 고칩니다. 가장 의심되는 곳은 `SeatValue.ROW_1_LEFT`입니다.
 5. **에뮬레이터 실행**: 2.3대로 만들고 `./gradlew installDebug`. 첫 실행 때 위치와 알림 권한을 허용합니다.
-6. **앱 시연 모드 확인**: `시연 모드` 버튼을 눌러 `지하 2층 · C-15`로 저장되는지 봅니다. 음성이 나오는지도 확인합니다.
-7. **Virtual Console 확인**: 앱에서 `주차장 진입` → 앱의 모의 표지판 버튼(B2, C-15) → 2초 뒤 Virtual Console의 Door Position에서 운전석 문 열기. `지하 2층 · C-15`로 저장되고 음성이 나오는지 봅니다. Steering Angle을 바꿨을 때 앱에 값이 들어오는지, Odometer 카드가 트립 주행거리를 바꾸는지도 로그로 확인합니다.
+6. **앱 시연 모드 확인**: 화면 왼쪽 위 상태 칩(`주행 중`/`저장된 위치`) 을 눌러 시연 모드를 시작하고(화면에 버튼은 없음) `지하 2층 · C-15`로 저장되는지 봅니다. 음성이 나오는지도 확인합니다.
+7. **Virtual Console 확인**: `adb` 진입 신호(TESTING.md A1) → 모의 표지판 신호(B2, C-15)를 `adb`로 보내기(TESTING.md A2) → 2초 뒤 Virtual Console의 Door Position에서 운전석 문 열기. `지하 2층 · C-15`로 저장되고 음성이 나오는지 봅니다. Steering Angle을 바꿨을 때 앱에 값이 들어오는지, Odometer 카드가 트립 주행거리를 바꾸는지도 로그로 확인합니다.
 8. **`confidence` 값 확인**: `LocationSource`에 로그를 넣어 실제 값을 보고 `ParkingDetector.Config`를 조정합니다.
 9. **폰 페이지 배포**: `web/` 폴더를 GitHub Pages로 올리고 `app/build.gradle.kts`의 `FIND_PAGE_URL`을 그 주소로 바꿉니다. 지금은 `https://YOUR_GITHUB_ID.github.io/parktrace/`로 비어 있습니다.
 10. **제출물 정리**: 이 문서 6장에 에뮬레이터 화면 해상도를 적고, 시연 영상을 녹화하고, 서명한 release APK를 `apk/`에 넣습니다.
@@ -306,7 +306,7 @@ android.permission.ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATI
 
 ### B. Pleos Connect 에뮬레이터 (앱 빌드 후)
 
-- 앱의 `시연 모드` 버튼: 위와 같은 시나리오가 앱 안에서 재생됩니다.
+- 앱의 시연 모드(화면 왼쪽 위 상태 칩(`주행 중`/`저장된 위치`) 을 누름): 위와 같은 시나리오가 앱 안에서 재생됩니다.
 - 직접 조작: 5장의 7번 순서대로 합니다.
 
 테스트 환경 (제출 전에 실제 값으로 채울 것):
@@ -317,7 +317,7 @@ android.permission.ACCESS_FINE_LOCATION, ACCESS_COARSE_LOCATION, POST_NOTIFICATI
 
 ### 폰 전달
 
-`폰으로 보내기` → QR을 폰으로 찍으면 `web/index.html`이 층, 기둥, 경로, 입구 지도 링크를 보여줍니다. 데이터는 주소의 `#d=` 뒤에만 있어 서버로 전송되지 않습니다. 형식은 `data/ShareLink.kt`에 있습니다.
+(지금은 앱 화면에 `폰으로 보내기` 버튼이 없습니다. 시연을 위해 뺐고 코드는 `MainActivity.showQr`에 남아 있습니다.) `폰으로 보내기` → QR을 폰으로 찍으면 `web/index.html`이 층, 기둥, 경로, 입구 지도 링크를 보여줍니다. 데이터는 주소의 `#d=` 뒤에만 있어 서버로 전송되지 않습니다. 형식은 `data/ShareLink.kt`에 있습니다.
 
 ---
 
@@ -398,7 +398,7 @@ LocationSource ┴─► ParkingMonitorService ─► ParkingDetector ─► 주
 
 ### 9.3 주차 요금과 폰 알림
 
-- 요금표는 주차장마다 직접 입력합니다 (`요금표` 버튼, `data/FeeBook.kt`). 기본값은 "최초 30분 무료, 이후 10분당 1,000원"입니다. 계산은 `core/FeePolicy.kt`에 있고, 시작한 단위마다 과금하며 1일 최대 금액을 적용합니다. 테스트는 `FeePolicyTest`입니다.
+- 요금표는 주차장마다 직접 입력합니다 (`data/FeeBook.kt`. 입력 화면 `MainActivity.showFeeDialog`는 남아 있지만 시연을 위해 `요금표` 버튼을 화면에서 뺐습니다). 기본값은 "최초 30분 무료, 이후 10분당 1,000원"입니다. 계산은 `core/FeePolicy.kt`에 있고, 시작한 단위마다 과금하며 1일 최대 금액을 적용합니다. 테스트는 `FeePolicyTest`입니다.
 - QR 주소에 진입 시각(`e`)과 요금표(`fp`)를 담습니다. 폰 페이지(`web/index.html`)는 아래를 보여줍니다.
   - 현재 예상 요금, 진입 시각, 무료 종료 시각, 다음 요금 인상 시각 (15초마다 갱신)
   - **요금 알림 켜기**: 브라우저 알림입니다(`web/sw.js` 필요). 무료 종료 10분 전, 무료 종료, 이후 1시간마다 알립니다. **페이지를 열어 둔 동안만** 동작합니다. 서버가 없어서 푸시를 보낼 수 없습니다.
@@ -420,6 +420,7 @@ LocationSource ┴─► ParkingMonitorService ─► ParkingDetector ─► 주
 - **Pleos 주차 기능과 함께 씀:** R을 넣으면 Pleos가 후방·좌우 카메라(Android EVS)를 띄웁니다. 주차하는 동안은 그 화면을 쓰고, P가 되면 여기세웠지가 다시 앞으로 나와 위치를 보여줍니다. EVS 카메라 영상과 자동주차 미니앱은 `signature|privileged` 권한이 필요해서 앱이 직접 쓸 수 없습니다 (에뮬레이터에서 확인).
 - **Android 기본 요소:** 화면 아이콘은 Android 표준 Material Icons(Google, Apache 2.0)를 벡터로 넣었습니다 (`res/drawable/ic_md_*.xml`). Android Automotive와 Android Auto에는 자동차 3D 객체 같은 기본 그래픽이 없습니다. 이 Pleos 이미지에 Car App Library 템플릿 호스트(`com.android.car.templates.host`)가 있지만, 템플릿도 지도 영역은 앱이 직접 그려야 해서 쓰지 않았습니다.
 - **3D 차량 모델:** Kenney Car Kit 3.1 (CC0, https://kenney.nl/assets/car-kit). `tools/convert_car_models.py`로 변환해 `app/src/main/assets/cars/`에 넣었습니다. 차체 색은 앱에서 다시 칠합니다. Pleos 주행 화면과 같은 스타일(밝은 바닥, 흰색 차량)로 맞췄고, 내 차만 파란색입니다. Pleos 주행 화면의 차량 3D 리소스는 시스템 앱 안에 있고 라이선스 3.4항(복제·역설계 금지) 때문에 가져다 쓰지 않습니다. 모델 파일이 없으면 코드로 만든 기본 모델로 그립니다.
+- **시연 모드의 후방 카메라 화면:** 앱 안 시연에서 후진할 때는 실제 카메라 대신 주차장 사진 한 장을 후방 카메라 영상처럼 보여 주고, 그 위에 후진 가이드선을 그립니다 (`ui/RearCameraView.kt`). 카메라는 열지 않습니다. 화면에 "시연용 가상 화면"이라고 표시합니다. 사진: "Parkhaus Rheinauhafen" (H005, 퍼블릭 도메인, https://commons.wikimedia.org/wiki/File:Parkhaus_Rheinauhafen.jpg), `res/drawable-nodpi/rear_camera_garage.jpg`.
 
 ### 9.5 남은 일
 

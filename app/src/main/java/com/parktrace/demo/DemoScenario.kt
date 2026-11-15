@@ -13,7 +13,7 @@ import com.parktrace.service.ParkingMonitorService
  * i.e. exactly what a camera reader would deliver later (the camera itself is not implemented).
  *
  * For a live demo, skip this: change steering / odometer / doors in the Pleos Connect Virtual Console
- * and tap the "모의 표지판" buttons on the main screen.
+ * and send sign text with the SIM_SIGN debug broadcast (tools\emulator-drive.ps1 does both).
  */
 class DemoScenario(private val service: ParkingMonitorService, private val onDone: () -> Unit) {
 

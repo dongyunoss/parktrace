@@ -74,22 +74,8 @@ class MainActivity : AppCompatActivity() {
         rearCamera = RearCameraView(this).apply { visibility = View.GONE }
         addContentView(rearCamera, android.view.ViewGroup.LayoutParams(android.view.ViewGroup.LayoutParams.MATCH_PARENT, android.view.ViewGroup.LayoutParams.MATCH_PARENT))
 
-        findViewById<Button>(R.id.btnQr).setOnClickListener { showQr() }
-        findViewById<Button>(R.id.btnManual).setOnClickListener { ParkTraceState.service?.manualGarageEntry() }
-        findViewById<Button>(R.id.btnDemo).setOnClickListener { toggleDemo() }
-        findViewById<Button>(R.id.btnFee).setOnClickListener { showFeeDialog() }
-        findViewById<Button>(R.id.btnClear).setOnClickListener { ParkTraceState.service?.clearHistory() }
-
-        // "모의 표지판": stands in for the camera until camera access is available (향후 계획).
-        mapOf(
-            R.id.btnSignB1 to "B1",
-            R.id.btnSignB2 to "B2",
-            R.id.btnSignC12 to "C-12",
-            R.id.btnSignC14 to "C-14",
-            R.id.btnSignC15 to "C-15",
-        ).forEach { (id, text) ->
-            findViewById<Button>(id).setOnClickListener { ParkTraceState.service?.simulateSign(text) }
-        }
+        // The screen has no buttons. The only control is hidden: tapping the status chip starts (or stops) the in-app demo.
+        phase.setOnClickListener { toggleDemo() }
 
         requestNeededPermissions()
     }
@@ -148,6 +134,8 @@ class MainActivity : AppCompatActivity() {
         demo = DemoScenario(svc) { demo = null }.also { it.start() }
     }
 
+    /** Not reachable at the moment: its button was taken off the screen for the demo. */
+    @Suppress("unused")
     private fun showQr() {
         val rec = ParkTraceState.ui.latest ?: run { toast("저장된 주차 기록이 없어요"); return }
         val url = ShareLink.build(BuildConfig.FIND_PAGE_URL, rec)
@@ -160,7 +148,11 @@ class MainActivity : AppCompatActivity() {
         AlertDialog.Builder(this).setView(box).setPositiveButton("닫기", null).show()
     }
 
-    /** Fee table per garage, entered by hand (no fee API). Only meant to be used while parked. */
+    /**
+     * Fee table per garage, entered by hand (no fee API). Only meant to be used while parked.
+     * Not reachable at the moment: its button was taken off the screen for the demo.
+     */
+    @Suppress("unused")
     private fun showFeeDialog() {
         val svc = ParkTraceState.service ?: return
         val place = svc.currentPlace()

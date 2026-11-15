@@ -48,7 +48,7 @@ import com.parktrace.ui.MainActivity
  *                                     └► parked ──────────► decide floor/pillar ──► save + TTS
  *
  * The sign reader is [SimulatedSignReader] in this build: the camera is not implemented yet
- * (향후 계획). Sign text comes from the demo scenario or the "모의 표지판" buttons.
+ * (향후 계획). Sign text comes from the demo scenario or the SIM_SIGN debug broadcast.
  */
 class ParkingMonitorService : Service() {
 
@@ -197,7 +197,7 @@ class ParkingMonitorService : Service() {
     fun inject(s: Signal) = process(s)
 
     /**
-     * "모의 표지판" buttons: behaves as if the camera had just read [text] ("|" separates lines).
+     * Simulated sign (SIM_SIGN debug broadcast): behaves as if the camera had just read [text] ("|" separates lines).
      * Only accepted while the car is inside a garage, like the real reader would be.
      */
     fun simulateSign(text: String) {

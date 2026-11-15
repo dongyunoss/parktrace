@@ -5,7 +5,7 @@ package com.parktrace.sdk
  *
  * Implementations:
  *  - [SimulatedSignReader]: no camera. Sign text is injected by the demo scenario or the
- *    "모의 표지판" buttons. This is what the contest build uses.
+ *    SIM_SIGN debug broadcast. This is what the contest build uses.
  *  - Future (향후 계획, not implemented): a vehicle-camera reader + on-device OCR, once a camera API
  *    is open to App Market apps. Only that one class needs to be added;
  *    detection / voting / UI stay the same.

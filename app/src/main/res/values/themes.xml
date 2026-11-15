@@ -50,16 +50,4 @@
         <item name="android:maxLines">1</item>
         <item name="android:stateListAnimator">@null</item>
     </style>
-
-    <!-- Secondary: demo-only controls (stand-ins for the camera), visually quieter -->
-    <style name="ActionSmall" parent="Widget.AppCompat.Button.Borderless">
-        <item name="android:layout_width">0dp</item>
-        <item name="android:layout_height">56dp</item>
-        <item name="android:layout_weight">1</item>
-        <item name="android:layout_marginEnd">10dp</item>
-        <item name="android:background">@drawable/button_outline_bg</item>
-        <item name="android:textColor">@color/muted</item>
-        <item name="android:textSize">19sp</item>
-        <item name="android:stateListAnimator">@null</item>
-    </style>
 </resources>
