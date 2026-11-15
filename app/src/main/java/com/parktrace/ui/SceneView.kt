@@ -29,7 +29,8 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
     private var scene: ParkingScene? = null
     private var carLabel: String = ""
 
-    private var yawOffset = Math.toRadians(-32.0)
+    /** How far the driver has turned the view by dragging. */
+    private var yawOffset = 0.0
     private var pitch = Math.toRadians(50.0)
     private val dist = DIST
 
@@ -65,9 +66,12 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         return x
     }
 
-    /** Camera side: behind the car while it drives (chase view), in front of it for the parked result. */
+    /**
+     * Camera side: behind the car and a little to one side while it drives (chase view); straight in front of
+     * it, looking at its nose, for the parked result.
+     */
     private var frontView = false
-    private fun camTarget(carAngle: Double) = if (frontView) carAngle + Math.PI else carAngle
+    private fun camTarget(carAngle: Double) = if (frontView) carAngle + Math.PI else carAngle + CHASE_OFFSET
 
     /** @param front look at the car from its front (the saved parking position) instead of from behind */
     fun setScene(s: ParkingScene?, label: String, front: Boolean = false) {
@@ -773,6 +777,8 @@ class SceneView @JvmOverloads constructor(context: Context, attrs: AttributeSet?
         private const val JUMP_METERS = 25.0
         /** Camera turn lag behind the car (seconds). */
         private const val CAM_TAU = 0.8
+        /** Chase view: the camera sits this far round from straight behind the car. */
+        private val CHASE_OFFSET = Math.toRadians(-32.0)
         private const val FRAME_MS = 33L
         private const val DIST = 17.0
         /** Bays, cars and walls further than this from our car are not drawn. */
